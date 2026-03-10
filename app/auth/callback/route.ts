@@ -32,15 +32,20 @@ export async function GET(request: Request) {
       return NextResponse.redirect(`${origin}/login?error=not_allowed`);
     }
 
-    // Check if user has configured their model preference
-    const { data: userSettings } = await supabase
+    // Check if user has configured their model preference.
+    // Use maybeSingle() so "no rows" returns null without an error,
+    // and only genuine DB failures surface as an error object.
+    const { data: userSettings, error: settingsError } = await supabase
       .from('user_settings')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
-    // New user — redirect to settings setup
-    if (!userSettings) {
+    if (settingsError) {
+      // Unexpected DB error — log it but don't block login; let the app handle it
+      console.error('user_settings check failed:', settingsError);
+    } else if (!userSettings) {
+      // New user — redirect to settings setup
       return NextResponse.redirect(`${origin}/settings?setup=true`);
     }
 

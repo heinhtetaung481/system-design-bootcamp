@@ -49,19 +49,24 @@ export default function Home() {
 
     // Load model preference from user settings
     fetch('/api/user-settings')
-      .then(r => r.json())
-      .then(data => {
-        if (data.selectedModel) {
-          setProvider(data.selectedModel as ModelProvider);
-        } else {
-          // No model configured — redirect to settings setup
-          router.push('/settings?setup=true');
+      .then(async res => {
+        if (!res.ok) {
+          // Server error — fall back to default provider, don't redirect
+          setSettingsLoading(false);
           return;
         }
-        setSettingsLoading(false);
+        const data = await res.json();
+        if (data.selectedModel) {
+          setProvider(data.selectedModel as ModelProvider);
+          setSettingsLoading(false);
+        } else {
+          // No model configured — redirect to settings setup
+          setSettingsLoading(false);
+          router.push('/settings?setup=true');
+        }
       })
       .catch(() => {
-        // Fallback: use default provider from env
+        // Network failure — fall back to default provider
         setSettingsLoading(false);
       });
   }, [router]);
@@ -84,15 +89,22 @@ export default function Home() {
     } catch { /* ignore */ }
   }, []);
 
-  // Close user menu on outside click
+  // Close user menu on outside click or Escape key
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
+    const handleClick = (e: MouseEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
         setUserMenuOpen(false);
       }
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setUserMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleKey);
+    };
   }, []);
 
   const saveProgress = (s: Set<string>) => {
@@ -262,6 +274,9 @@ export default function Home() {
                 <button
                   onClick={() => setUserMenuOpen(o => !o)}
                   title={userName ? `Account (${userName})` : 'Account'}
+                  aria-haspopup="menu"
+                  aria-expanded={userMenuOpen}
+                  aria-label={userName ? `Account menu for ${userName}` : 'Account menu'}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 6,
                     padding: '3px 8px 3px 3px',
@@ -297,16 +312,20 @@ export default function Home() {
 
                 {/* Dropdown */}
                 {userMenuOpen && (
-                  <div style={{
-                    position: 'absolute', top: 'calc(100% + 6px)', right: 0,
-                    background: '#2c2c2e',
-                    border: '1px solid rgba(255,255,255,0.10)',
-                    borderRadius: 10,
-                    padding: 6,
-                    minWidth: 170,
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-                    zIndex: 100,
-                  }}>
+                  <div
+                    role="menu"
+                    aria-label="Account options"
+                    style={{
+                      position: 'absolute', top: 'calc(100% + 6px)', right: 0,
+                      background: '#2c2c2e',
+                      border: '1px solid rgba(255,255,255,0.10)',
+                      borderRadius: 10,
+                      padding: 6,
+                      minWidth: 170,
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                      zIndex: 100,
+                    }}
+                  >
                     {userName && (
                       <div style={{
                         padding: '6px 10px 8px',
@@ -320,6 +339,7 @@ export default function Home() {
                       </div>
                     )}
                     <button
+                      role="menuitem"
                       onClick={() => { setUserMenuOpen(false); router.push('/settings'); }}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 8,
@@ -338,6 +358,7 @@ export default function Home() {
                       Settings
                     </button>
                     <button
+                      role="menuitem"
                       onClick={handleSignOut}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 8,

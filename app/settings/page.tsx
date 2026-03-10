@@ -20,17 +20,24 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const init = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserAvatar(user.user_metadata?.avatar_url || null);
-        setUserName(user.user_metadata?.user_name || user.email || null);
-      }
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setUserAvatar(user.user_metadata?.avatar_url || null);
+          setUserName(user.user_metadata?.user_name || user.email || null);
+        }
 
-      const res = await fetch('/api/user-settings');
-      const data = await res.json();
-      if (data.selectedModel) setSelected(data.selectedModel);
-      setLoading(false);
+        const res = await fetch('/api/user-settings');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.selectedModel) setSelected(data.selectedModel);
+        }
+      } catch {
+        // Fetch failed — loading clears below; user can still select a model
+      } finally {
+        setLoading(false);
+      }
     };
     init();
   }, []);

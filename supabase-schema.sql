@@ -52,7 +52,24 @@ CREATE TABLE IF NOT EXISTS user_settings (
   updated_at     timestamptz DEFAULT now()
 );
 
--- Optional: enable Row Level Security
+-- Row Level Security: each user can only read/write their own settings row.
+-- Required because NEXT_PUBLIC_SUPABASE_ANON_KEY is exposed to the browser,
+-- so without RLS any client could read or overwrite any other user's settings.
+ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own settings"
+  ON user_settings FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own settings"
+  ON user_settings FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own settings"
+  ON user_settings FOR UPDATE
+  USING (auth.uid() = user_id);
+
+-- Optional: enable Row Level Security on other tables
 -- ALTER TABLE lessons ENABLE ROW LEVEL SECURITY;
 -- ALTER TABLE ask_responses ENABLE ROW LEVEL SECURITY;
 
