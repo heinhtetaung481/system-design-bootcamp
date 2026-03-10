@@ -32,6 +32,18 @@ export async function GET(request: Request) {
       return NextResponse.redirect(`${origin}/login?error=not_allowed`);
     }
 
+    // Check if user has configured their model preference
+    const { data: userSettings } = await supabase
+      .from('user_settings')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    // New user — redirect to settings setup
+    if (!userSettings) {
+      return NextResponse.redirect(`${origin}/settings?setup=true`);
+    }
+
     return NextResponse.redirect(origin);
   }
 

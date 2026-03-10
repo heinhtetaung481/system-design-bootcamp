@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { ModelProvider } from '@/types';
 import { getTopicById, getAllTopics } from '@/lib/curriculum';
 import { createClient } from '@/lib/supabase-browser';
 import Sidebar from '@/components/Sidebar';
-import ModelSelector from '@/components/ModelSelector';
 import LearnTab from '@/components/LearnTab';
 import DiagramTab from '@/components/DiagramTab';
 import PracticeTab from '@/components/PracticeTab';
@@ -21,6 +21,7 @@ const TABS: { id: Tab; label: string; emoji: string }[] = [
 ];
 
 export default function Home() {
+  const router = useRouter();
   const [currentId,   setCurrentId]   = useState('networking');
   const [activeTab,   setActiveTab]   = useState<Tab>('learn');
   const [completed,   setCompleted]   = useState<Set<string>>(new Set());
@@ -29,8 +30,11 @@ export default function Home() {
   const [isMobile,    setIsMobile]    = useState(false);
   const [userAvatar,  setUserAvatar]  = useState<string | null>(null);
   const [userName,    setUserName]    = useState<string | null>(null);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [settingsLoading, setSettingsLoading] = useState(true);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
-  // Clean ?code= from URL and fetch user info
+  // Load user info and model setting
   useEffect(() => {
     if (window.location.search.includes('code=')) {
       window.history.replaceState({}, '', '/');
@@ -42,7 +46,25 @@ export default function Home() {
         setUserName(user.user_metadata?.user_name || user.email || null);
       }
     });
-  }, []);
+
+    // Load model preference from user settings
+    fetch('/api/user-settings')
+      .then(r => r.json())
+      .then(data => {
+        if (data.selectedModel) {
+          setProvider(data.selectedModel as ModelProvider);
+        } else {
+          // No model configured — redirect to settings setup
+          router.push('/settings?setup=true');
+          return;
+        }
+        setSettingsLoading(false);
+      })
+      .catch(() => {
+        // Fallback: use default provider from env
+        setSettingsLoading(false);
+      });
+  }, [router]);
 
   useEffect(() => {
     const check = () => {
@@ -60,6 +82,17 @@ export default function Home() {
       const saved = localStorage.getItem('sdb_progress');
       if (saved) setCompleted(new Set(JSON.parse(saved)));
     } catch { /* ignore */ }
+  }, []);
+
+  // Close user menu on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, []);
 
   const saveProgress = (s: Set<string>) => {
@@ -91,6 +124,14 @@ export default function Home() {
   const idx        = allTopics.findIndex(t => t.id === currentId);
   const prevTopic  = idx > 0 ? allTopics[idx - 1] : null;
   const nextTopic  = idx < allTopics.length - 1 ? allTopics[idx + 1] : null;
+
+  if (settingsLoading) {
+    return (
+      <div style={{ display: 'flex', height: '100dvh', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
+        <div style={{ color: 'rgba(245,245,247,0.25)', fontSize: 14 }}>Loading…</div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', height: '100dvh', overflow: 'hidden', background: '#000' }}>
@@ -161,7 +202,6 @@ export default function Home() {
 
             {/* Right controls */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-              <ModelSelector provider={provider} onChange={setProvider} />
 
               {/* Prev / Next */}
               {[
@@ -217,44 +257,108 @@ export default function Home() {
                 </button>
               )}
 
-              {/* User avatar + Sign out */}
-              <button
-                onClick={handleSignOut}
-                title={userName ? `Sign out (${userName})` : 'Sign out'}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '3px 8px 3px 3px',
-                  borderRadius: 8,
-                  color: 'rgba(245,245,247,0.45)',
-                  background: 'transparent',
-                  border: 'none', cursor: 'pointer',
-                  transition: 'background 0.15s, color 0.15s',
-                  flexShrink: 0,
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#f5f5f7'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(245,245,247,0.45)'; }}
-              >
-                {userAvatar ? (
-                  <img
-                    src={userAvatar}
-                    alt=""
-                    style={{
-                      width: 22, height: 22, borderRadius: '50%',
-                      border: '1.5px solid rgba(255,255,255,0.12)',
-                    }}
-                  />
-                ) : (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="8" r="4" />
-                    <path d="M20 21a8 8 0 1 0-16 0" />
+              {/* User avatar + dropdown menu */}
+              <div ref={userMenuRef} style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setUserMenuOpen(o => !o)}
+                  title={userName ? `Account (${userName})` : 'Account'}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    padding: '3px 8px 3px 3px',
+                    borderRadius: 8,
+                    color: 'rgba(245,245,247,0.45)',
+                    background: userMenuOpen ? 'rgba(255,255,255,0.08)' : 'transparent',
+                    border: 'none', cursor: 'pointer',
+                    transition: 'background 0.15s, color 0.15s',
+                    flexShrink: 0,
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#f5f5f7'; }}
+                  onMouseLeave={e => { if (!userMenuOpen) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(245,245,247,0.45)'; } }}
+                >
+                  {userAvatar ? (
+                    <img
+                      src={userAvatar}
+                      alt=""
+                      style={{
+                        width: 22, height: 22, borderRadius: '50%',
+                        border: '1.5px solid rgba(255,255,255,0.12)',
+                      }}
+                    />
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="8" r="4" />
+                      <path d="M20 21a8 8 0 1 0-16 0" />
+                    </svg>
+                  )}
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
+                </button>
+
+                {/* Dropdown */}
+                {userMenuOpen && (
+                  <div style={{
+                    position: 'absolute', top: 'calc(100% + 6px)', right: 0,
+                    background: '#2c2c2e',
+                    border: '1px solid rgba(255,255,255,0.10)',
+                    borderRadius: 10,
+                    padding: 6,
+                    minWidth: 170,
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                    zIndex: 100,
+                  }}>
+                    {userName && (
+                      <div style={{
+                        padding: '6px 10px 8px',
+                        borderBottom: '1px solid rgba(255,255,255,0.07)',
+                        marginBottom: 4,
+                      }}>
+                        <div style={{ fontSize: 11, color: 'rgba(245,245,247,0.35)', marginBottom: 1 }}>Signed in as</div>
+                        <div style={{ fontSize: 13, color: '#f5f5f7', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {userName}
+                        </div>
+                      </div>
+                    )}
+                    <button
+                      onClick={() => { setUserMenuOpen(false); router.push('/settings'); }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        width: '100%', padding: '7px 10px',
+                        borderRadius: 7, border: 'none', cursor: 'pointer',
+                        background: 'transparent', color: 'rgba(245,245,247,0.80)',
+                        fontSize: 13, textAlign: 'left', transition: 'background 0.1s',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                      </svg>
+                      Settings
+                    </button>
+                    <button
+                      onClick={handleSignOut}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        width: '100%', padding: '7px 10px',
+                        borderRadius: 7, border: 'none', cursor: 'pointer',
+                        background: 'transparent', color: 'rgba(255,69,58,0.85)',
+                        fontSize: 13, textAlign: 'left', transition: 'background 0.1s',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,69,58,0.10)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                        <polyline points="16 17 21 12 16 7" />
+                        <line x1="21" y1="12" x2="9" y2="12" />
+                      </svg>
+                      Sign out
+                    </button>
+                  </div>
                 )}
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
-              </button>
+              </div>
             </div>
           </div>
 

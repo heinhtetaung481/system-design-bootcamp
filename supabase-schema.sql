@@ -43,6 +43,15 @@ CREATE TABLE IF NOT EXISTS ask_responses (
   created_at    timestamptz DEFAULT now()
 );
 
+-- Stores per-user AI model preference
+CREATE TABLE IF NOT EXISTS user_settings (
+  id             uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id        uuid        NOT NULL UNIQUE,
+  selected_model text        NOT NULL DEFAULT 'anthropic',
+  created_at     timestamptz DEFAULT now(),
+  updated_at     timestamptz DEFAULT now()
+);
+
 -- Optional: enable Row Level Security
 -- ALTER TABLE lessons ENABLE ROW LEVEL SECURITY;
 -- ALTER TABLE ask_responses ENABLE ROW LEVEL SECURITY;

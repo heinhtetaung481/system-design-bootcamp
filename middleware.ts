@@ -30,12 +30,13 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Allow access to login page, auth callback, API routes, and static assets
+  // Allow access to login page, auth callback, API routes, settings, and static assets
   const { pathname } = request.nextUrl;
   if (
     pathname.startsWith('/login') ||
     pathname.startsWith('/auth') ||
     pathname.startsWith('/api') ||
+    pathname.startsWith('/settings') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon')
   ) {
