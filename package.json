@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "migrate": "node scripts/migrate.js up",
+    "migrate:up": "node scripts/migrate.js up",
+    "migrate:down": "node scripts/migrate.js down",
+    "migrate:status": "node scripts/migrate.js status"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
@@ -18,6 +22,7 @@
     "react-dom": "19.2.3"
   },
   "devDependencies": {
+    "pg": "^8.13.3",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

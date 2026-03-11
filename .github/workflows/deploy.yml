@@ -7,11 +7,87 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        default: 'migrate-and-deploy'
+        type: choice
+        options:
+          - migrate-and-deploy
+          - migrate-only
+          - rollback
+          - migration-status
+      rollback_steps:
+        description: 'Number of migrations to roll back (rollback action only)'
+        required: false
+        default: '1'
+        type: string
 
 jobs:
+  # ---------------------------------------------------------------------------
+  # Migrate: apply / roll back / show status.
+  # Runs on push to main and manual dispatch. Skipped for pull requests so
+  # unreviewed code never touches the production database.
+  # ---------------------------------------------------------------------------
+  migrate:
+    name: Database Migrations
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Show migration status
+        if: |
+          github.event_name == 'push' ||
+          inputs.action == 'migration-status' ||
+          inputs.action == 'migrate-and-deploy' ||
+          inputs.action == 'migrate-only'
+        run: node scripts/migrate.js status
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Apply pending migrations (up)
+        if: |
+          github.event_name == 'push' ||
+          inputs.action == 'migrate-and-deploy' ||
+          inputs.action == 'migrate-only'
+        run: node scripts/migrate.js up
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Roll back migrations (down)
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'rollback'
+        run: node scripts/migrate.js down ${{ inputs.rollback_steps }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+  # ---------------------------------------------------------------------------
+  # Deploy: build and push to Vercel.
+  # Waits for migrate when it runs; proceeds directly for pull requests
+  # (preview deployments don't touch production data).
+  # Skipped for manual actions that are migration-only.
+  # ---------------------------------------------------------------------------
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
+    needs: [migrate]
+    if: |
+      always() &&
+      !cancelled() &&
+      (needs.migrate.result == 'success' || needs.migrate.result == 'skipped') &&
+      (github.event_name != 'workflow_dispatch' || inputs.action == 'migrate-and-deploy')
     permissions:
       contents: read
     steps:
