@@ -62,4 +62,5 @@ CREATE POLICY "Users can insert own settings"
 
 CREATE POLICY "Users can update own settings"
   ON user_settings FOR UPDATE
-  USING (auth.uid() = user_id);
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);

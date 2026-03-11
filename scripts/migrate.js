@@ -41,7 +41,11 @@ async function connect() {
     );
     process.exit(1);
   }
-  const client = new Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
+  const sslNoVerify = process.env.DATABASE_SSL_NO_VERIFY === '1';
+  const client = new Client({
+    connectionString: url,
+    ssl: sslNoVerify ? { rejectUnauthorized: false } : true,
+  });
   await client.connect();
   return client;
 }

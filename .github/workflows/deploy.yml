@@ -25,6 +25,12 @@ on:
         default: '1'
         type: string
 
+# Serialize all runs that touch the production database so concurrent pushes
+# to main cannot run overlapping migrations.
+concurrency:
+  group: db-migrate-main
+  cancel-in-progress: false
+
 jobs:
   # ---------------------------------------------------------------------------
   # Migrate: apply / roll back / show status.
