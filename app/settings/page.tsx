@@ -274,7 +274,11 @@ function SettingsContent() {
 
 export default function SettingsPage() {
   return (
-    <Suspense>
+    <Suspense fallback={
+      <div style={{ minHeight: '100dvh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ color: 'rgba(245,245,247,0.45)', fontSize: 14 }}>Loading...</div>
+      </div>
+    }>
       <SettingsContent />
     </Suspense>
   );

@@ -65,6 +65,7 @@ jobs:
         run: node scripts/migrate.js status
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          NODE_OPTIONS: '--dns-result-order=ipv4first'
 
       - name: Apply pending migrations (up)
         if: |
@@ -74,12 +75,14 @@ jobs:
         run: node scripts/migrate.js up
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          NODE_OPTIONS: '--dns-result-order=ipv4first'
 
       - name: Roll back migrations (down)
         if: github.event_name == 'workflow_dispatch' && inputs.action == 'rollback'
         run: node scripts/migrate.js down ${{ inputs.rollback_steps }}
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          NODE_OPTIONS: '--dns-result-order=ipv4first'
 
   # ---------------------------------------------------------------------------
   # Deploy: build and push to Vercel.
