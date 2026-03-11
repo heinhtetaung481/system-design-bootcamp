@@ -45,6 +45,7 @@ async function connect() {
   const client = new Client({
     connectionString: url,
     ssl: sslNoVerify ? { rejectUnauthorized: false } : true,
+    family: 4, // force IPv4 — runners/envs without IPv6 routing get ENETUNREACH otherwise
   });
   await client.connect();
   return client;
