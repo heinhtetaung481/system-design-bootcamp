@@ -34,7 +34,9 @@ jobs:
   migrate:
     name: Database Migrations
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    # workflow_dispatch is restricted to main so feature-branch SQL can never
+    # reach the production DATABASE_URL accidentally.
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
