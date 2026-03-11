@@ -12,6 +12,7 @@ jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.fork == false
     permissions:
       contents: read
     steps:
