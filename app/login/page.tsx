@@ -1,64 +1,28 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { createClient } from '@/lib/supabase-browser';
 
 export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
-
-    if (code) {
-      setLoading(true);
-      const supabase = createClient();
-      supabase.auth.exchangeCodeForSession(code).then(async ({ data, error: exchangeError }) => {
-        if (exchangeError || !data.user) {
-          setError(exchangeError?.message || 'Authentication failed');
-          setLoading(false);
-          window.history.replaceState({}, '', '/login');
-          return;
-        }
-
-        const email = data.user.email;
-        const githubUsername = data.user.user_metadata?.user_name || data.user.user_metadata?.preferred_username;
-
-        const { data: allowedUser } = await supabase
-          .from('allowed_users')
-          .select('id')
-          .or(`email.eq.${email},github_username.eq.${githubUsername}`)
-          .limit(1)
-          .single();
-
-        if (!allowedUser) {
-          await supabase.auth.signOut();
-          setError('Your account is not authorized to access this app.');
-          setLoading(false);
-          window.history.replaceState({}, '', '/login');
-          return;
-        }
-
-        window.location.href = '/';
-      });
-    }
-  }, []);
-
   const handleLogin = async () => {
     setError('');
+    setLoading(true);
     try {
       const supabase = createClient();
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
       const { data, error: authError } = await supabase.auth.signInWithOAuth({
         provider: 'github',
-        options: { redirectTo: `${siteUrl}/login` },
+        options: { redirectTo: `${siteUrl}/auth/callback` },
       });
 
-      if (authError) { setError(authError.message); return; }
+      if (authError) { setError(authError.message); setLoading(false); return; }
       if (data?.url) window.location.href = data.url;
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Login failed');
+      setLoading(false);
     }
   };
 
