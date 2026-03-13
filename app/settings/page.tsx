@@ -68,30 +68,42 @@ function SettingsContent() {
   };
 
   return (
-    <div style={{ minHeight: '100dvh', background: '#000', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
 
-      {/* Header */}
+      {/* Glass Header */}
       <header style={{
         flexShrink: 0,
-        background: '#1c1c1e',
-        borderBottom: '1px solid rgba(255,255,255,0.08)',
+        background: 'rgba(7,7,15,0.75)',
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
+        borderBottom: '1px solid rgba(255,255,255,0.09)',
         display: 'flex',
         alignItems: 'center',
         padding: '0 20px',
         height: 52,
         gap: 12,
+        position: 'relative',
+        zIndex: 10,
       }}>
         {!isSetup && (
           <button
             onClick={() => router.push('/')}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
-              background: 'transparent', border: 'none', cursor: 'pointer',
-              color: 'rgba(245,245,247,0.50)', fontSize: 13, padding: '4px 8px',
-              borderRadius: 6, transition: 'color 0.15s',
+              background: 'transparent', border: '1px solid transparent', cursor: 'pointer',
+              color: 'rgba(237,237,245,0.45)', fontSize: 13, padding: '4px 8px',
+              borderRadius: 7, transition: 'all 0.15s',
             }}
-            onMouseEnter={e => { e.currentTarget.style.color = '#f5f5f7'; }}
-            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(245,245,247,0.50)'; }}
+            onMouseEnter={e => {
+              e.currentTarget.style.color = '#ededf5';
+              e.currentTarget.style.background = 'rgba(255,255,255,0.07)';
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.color = 'rgba(237,237,245,0.45)';
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.borderColor = 'transparent';
+            }}
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -100,7 +112,13 @@ function SettingsContent() {
           </button>
         )}
 
-        <span style={{ fontSize: 15, fontWeight: 600, color: '#f5f5f7' }}>
+        <span style={{
+          fontSize: 15,
+          fontWeight: 600,
+          color: '#ededf5',
+          fontFamily: "'Space Grotesk', sans-serif",
+          letterSpacing: '-0.02em',
+        }}>
           {isSetup ? '🏗️ System Design Bootcamp' : 'Settings'}
         </span>
 
@@ -109,22 +127,31 @@ function SettingsContent() {
         {/* User + sign out */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {userAvatar && (
-            <img src={userAvatar} alt="" style={{ width: 22, height: 22, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.12)' }} />
+            <img src={userAvatar} alt="" style={{ width: 24, height: 24, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.15)' }} />
           )}
           {userName && (
-            <span style={{ fontSize: 12, color: 'rgba(245,245,247,0.45)' }}>{userName}</span>
+            <span style={{ fontSize: 12, color: 'rgba(237,237,245,0.42)' }}>{userName}</span>
           )}
           <button
             onClick={handleSignOut}
             style={{
               display: 'flex', alignItems: 'center', gap: 5,
-              padding: '4px 10px', borderRadius: 6, border: 'none',
+              padding: '4px 10px', borderRadius: 7,
+              border: '1px solid transparent',
               fontSize: 12, fontWeight: 400, cursor: 'pointer',
-              color: 'rgba(245,245,247,0.45)', background: 'transparent',
-              transition: 'background 0.15s, color 0.15s',
+              color: 'rgba(237,237,245,0.42)', background: 'transparent',
+              transition: 'all 0.15s',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#f5f5f7'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(245,245,247,0.45)'; }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.07)';
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)';
+              e.currentTarget.style.color = '#ededf5';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.borderColor = 'transparent';
+              e.currentTarget.style.color = 'rgba(237,237,245,0.42)';
+            }}
           >
             Sign out
           </button>
@@ -138,16 +165,25 @@ function SettingsContent() {
           {isSetup && (
             <div style={{
               marginBottom: 32, textAlign: 'center',
-              padding: '24px',
-              borderRadius: 16,
-              background: 'rgba(10,132,255,0.08)',
-              border: '1px solid rgba(10,132,255,0.20)',
+              padding: '28px 24px',
+              borderRadius: 20,
+              background: 'rgba(79,142,247,0.07)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              border: '1px solid rgba(79,142,247,0.20)',
+              boxShadow: '0 8px 32px rgba(79,142,247,0.08)',
             }}>
-              <div style={{ fontSize: 36, marginBottom: 10 }}>👋</div>
-              <h2 style={{ fontSize: 18, fontWeight: 600, color: '#f5f5f7', margin: '0 0 8px', letterSpacing: '-0.01em' }}>
+              <div style={{ fontSize: 36, marginBottom: 12 }}>👋</div>
+              <h2 style={{
+                fontSize: 20, fontWeight: 700,
+                color: '#ededf5',
+                margin: '0 0 8px',
+                letterSpacing: '-0.03em',
+                fontFamily: "'Space Grotesk', sans-serif",
+              }}>
                 Welcome! One quick step
               </h2>
-              <p style={{ fontSize: 13, color: 'rgba(245,245,247,0.55)', lineHeight: 1.6, margin: 0 }}>
+              <p style={{ fontSize: 13.5, color: 'rgba(237,237,245,0.52)', lineHeight: 1.6, margin: 0 }}>
                 Choose your preferred AI model to generate lessons. You can change this later in Settings.
               </p>
             </div>
@@ -155,27 +191,43 @@ function SettingsContent() {
 
           {!isSetup && (
             <div style={{ marginBottom: 28 }}>
-              <h1 style={{ fontSize: 22, fontWeight: 700, color: '#f5f5f7', margin: '0 0 6px', letterSpacing: '-0.02em' }}>
+              <h1 style={{
+                fontSize: 24, fontWeight: 700,
+                color: '#ededf5',
+                margin: '0 0 6px',
+                letterSpacing: '-0.04em',
+                fontFamily: "'Space Grotesk', sans-serif",
+              }}>
                 Account Settings
               </h1>
-              <p style={{ fontSize: 14, color: 'rgba(245,245,247,0.45)', margin: 0 }}>
+              <p style={{ fontSize: 14, color: 'rgba(237,237,245,0.42)', margin: 0 }}>
                 Configure your AI model preference and account options.
               </p>
             </div>
           )}
 
-          {/* Model selection */}
+          {/* Model selection glass card */}
           <div style={{
-            background: '#1c1c1e',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 16,
+            background: 'rgba(255,255,255,0.05)',
+            backdropFilter: 'blur(28px)',
+            WebkitBackdropFilter: 'blur(28px)',
+            border: '1px solid rgba(255,255,255,0.10)',
+            borderRadius: 20,
             padding: 24,
             marginBottom: 16,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.07)',
           }}>
-            <h2 style={{ fontSize: 13, fontWeight: 600, color: 'rgba(245,245,247,0.55)', margin: '0 0 16px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <h2 style={{
+              fontSize: 11, fontWeight: 600,
+              color: 'rgba(237,237,245,0.40)',
+              margin: '0 0 6px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              fontFamily: "'JetBrains Mono', monospace",
+            }}>
               AI Model
             </h2>
-            <p style={{ fontSize: 13, color: 'rgba(245,245,247,0.45)', margin: '0 0 16px', lineHeight: 1.5 }}>
+            <p style={{ fontSize: 13, color: 'rgba(237,237,245,0.42)', margin: '0 0 18px', lineHeight: 1.55 }}>
               The selected model will be used for all lessons and Q&amp;A throughout the app.
             </p>
 
@@ -196,28 +248,42 @@ function SettingsContent() {
                       style={{
                         display: 'flex', alignItems: 'center', gap: 16,
                         padding: '16px 18px',
-                        borderRadius: 12,
-                        border: active ? `1.5px solid ${opt.color}` : '1.5px solid rgba(255,255,255,0.08)',
-                        background: active ? `rgba(${opt.color === '#FF8C42' ? '255,140,66' : '16,163,127'},0.08)` : 'rgba(255,255,255,0.03)',
+                        borderRadius: 14,
+                        border: active ? `1.5px solid ${opt.color}` : '1.5px solid rgba(255,255,255,0.09)',
+                        background: active
+                          ? `rgba(${opt.color === '#FF8C42' ? '255,140,66' : '16,163,127'},0.08)`
+                          : 'rgba(255,255,255,0.03)',
+                        backdropFilter: 'blur(12px)',
+                        WebkitBackdropFilter: 'blur(12px)',
                         cursor: 'pointer',
                         textAlign: 'left',
-                        transition: 'all 0.15s',
+                        transition: 'all 0.18s',
                         width: '100%',
+                        boxShadow: active ? `0 4px 20px ${opt.color}22` : 'none',
                       }}
+                      onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
+                      onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
                     >
                       {/* Color dot */}
                       <div style={{
                         width: 10, height: 10, borderRadius: '50%',
-                        background: active ? opt.color : 'rgba(245,245,247,0.20)',
+                        background: active ? opt.color : 'rgba(237,237,245,0.18)',
                         flexShrink: 0,
                         transition: 'background 0.15s',
+                        boxShadow: active ? `0 0 8px ${opt.color}80` : 'none',
                       }} />
 
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 15, fontWeight: 600, color: '#f5f5f7', marginBottom: 3 }}>
+                        <div style={{
+                          fontSize: 15, fontWeight: 600,
+                          color: '#ededf5',
+                          marginBottom: 3,
+                          fontFamily: "'Space Grotesk', sans-serif",
+                          letterSpacing: '-0.01em',
+                        }}>
                           {opt.name}
                         </div>
-                        <div style={{ fontSize: 12, color: 'rgba(245,245,247,0.45)' }}>
+                        <div style={{ fontSize: 12, color: 'rgba(237,237,245,0.42)' }}>
                           {opt.description}
                         </div>
                       </div>
@@ -225,7 +291,7 @@ function SettingsContent() {
                       {/* Radio */}
                       <div style={{
                         width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
-                        border: active ? `5px solid ${opt.color}` : '1.5px solid rgba(255,255,255,0.25)',
+                        border: active ? `5px solid ${opt.color}` : '1.5px solid rgba(255,255,255,0.22)',
                         background: 'transparent',
                         transition: 'all 0.15s',
                       }} />
@@ -238,9 +304,12 @@ function SettingsContent() {
 
           {error && (
             <p style={{
-              fontSize: 13, color: '#ff453a', textAlign: 'center',
+              fontSize: 13, color: '#f87171', textAlign: 'center',
               padding: '10px 16px', borderRadius: 10,
-              background: 'rgba(255,69,58,0.1)', border: '1px solid rgba(255,69,58,0.2)',
+              background: 'rgba(248,113,113,0.08)',
+              border: '1px solid rgba(248,113,113,0.20)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
               marginBottom: 16,
             }}>
               {error}
@@ -251,19 +320,25 @@ function SettingsContent() {
             onClick={handleSave}
             disabled={!selected || saving || loading}
             style={{
-              width: '100%', padding: '13px 20px',
-              borderRadius: 12, border: 'none',
-              fontSize: 15, fontWeight: 600, cursor: (!selected || saving) ? 'not-allowed' : 'pointer',
+              width: '100%', padding: '14px 20px',
+              borderRadius: 14, border: 'none',
+              fontSize: 15, fontWeight: 600,
+              cursor: (!selected || saving) ? 'not-allowed' : 'pointer',
               color: '#fff',
-              background: selected ? '#0a84ff' : 'rgba(255,255,255,0.10)',
+              background: selected
+                ? 'linear-gradient(135deg, #4f8ef7, #818cf8)'
+                : 'rgba(255,255,255,0.08)',
               opacity: (!selected || saving || loading) ? 0.6 : 1,
-              transition: 'all 0.15s',
+              transition: 'all 0.18s',
+              boxShadow: selected ? '0 4px 24px rgba(79,142,247,0.30)' : 'none',
+              fontFamily: "'Space Grotesk', sans-serif",
+              letterSpacing: '-0.01em',
             }}
           >
             {saving ? 'Saving…' : isSetup ? 'Continue to App' : 'Save Settings'}
           </button>
 
-          <p style={{ fontSize: 12, color: 'rgba(245,245,247,0.25)', textAlign: 'center', marginTop: 12, lineHeight: 1.5 }}>
+          <p style={{ fontSize: 12, color: 'rgba(237,237,245,0.22)', textAlign: 'center', marginTop: 14, lineHeight: 1.5 }}>
             API keys are managed server-side. You do not need to provide your own.
           </p>
         </div>
@@ -275,8 +350,8 @@ function SettingsContent() {
 export default function SettingsPage() {
   return (
     <Suspense fallback={
-      <div style={{ minHeight: '100dvh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ color: 'rgba(245,245,247,0.45)', fontSize: 14 }}>Loading...</div>
+      <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ color: 'rgba(237,237,245,0.35)', fontSize: 14 }}>Loading…</div>
       </div>
     }>
       <SettingsContent />

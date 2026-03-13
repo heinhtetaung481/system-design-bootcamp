@@ -34,7 +34,6 @@ export default function Home() {
   const [settingsLoading, setSettingsLoading] = useState(true);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-  // Load user info and model setting
   useEffect(() => {
     if (window.location.search.includes('code=')) {
       window.history.replaceState({}, '', '/');
@@ -47,28 +46,19 @@ export default function Home() {
       }
     });
 
-    // Load model preference from user settings
     fetch('/api/user-settings')
       .then(async res => {
-        if (!res.ok) {
-          // Server error — fall back to default provider, don't redirect
-          setSettingsLoading(false);
-          return;
-        }
+        if (!res.ok) { setSettingsLoading(false); return; }
         const data = await res.json();
         if (data.selectedModel) {
           setProvider(data.selectedModel as ModelProvider);
           setSettingsLoading(false);
         } else {
-          // No model configured — redirect to settings setup
           setSettingsLoading(false);
           router.push('/settings?setup=true');
         }
       })
-      .catch(() => {
-        // Network failure — fall back to default provider
-        setSettingsLoading(false);
-      });
+      .catch(() => { setSettingsLoading(false); });
   }, [router]);
 
   useEffect(() => {
@@ -89,7 +79,6 @@ export default function Home() {
     } catch { /* ignore */ }
   }, []);
 
-  // Close user menu on outside click or Escape key
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
@@ -139,14 +128,14 @@ export default function Home() {
 
   if (settingsLoading) {
     return (
-      <div style={{ display: 'flex', height: '100dvh', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
-        <div style={{ color: 'rgba(245,245,247,0.25)', fontSize: 14 }}>Loading…</div>
+      <div style={{ display: 'flex', height: '100dvh', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ color: 'rgba(237,237,245,0.30)', fontSize: 14, fontFamily: "'Inter', sans-serif" }}>Loading…</div>
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'flex', height: '100dvh', overflow: 'hidden', background: '#000' }}>
+    <div style={{ display: 'flex', height: '100dvh', overflow: 'hidden' }}>
 
       <Sidebar
         currentId={currentId}
@@ -159,11 +148,15 @@ export default function Home() {
 
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, overflow: 'hidden' }}>
 
-        {/* ── Toolbar ── */}
+        {/* ── Glass Toolbar ── */}
         <header style={{
           flexShrink: 0,
-          background: '#1c1c1e',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          background: 'rgba(7,7,15,0.75)',
+          backdropFilter: 'blur(24px)',
+          WebkitBackdropFilter: 'blur(24px)',
+          borderBottom: '1px solid rgba(255,255,255,0.09)',
+          position: 'relative',
+          zIndex: 10,
         }}>
 
           {/* Row 1 */}
@@ -176,17 +169,26 @@ export default function Home() {
                 width: 32, height: 32,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 borderRadius: 8,
-                color: 'rgba(245,245,247,0.45)',
+                color: 'rgba(237,237,245,0.40)',
                 background: 'transparent',
-                border: 'none', cursor: 'pointer',
+                border: '1px solid transparent',
+                cursor: 'pointer',
                 flexShrink: 0,
-                transition: 'background 0.15s, color 0.15s',
+                transition: 'all 0.15s',
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#f5f5f7'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(245,245,247,0.45)'; }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.07)';
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)';
+                e.currentTarget.style.color = '#ededf5';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.borderColor = 'transparent';
+                e.currentTarget.style.color = 'rgba(237,237,245,0.40)';
+              }}
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <rect x="2" y="4" width="12" height="1.5" rx="0.75" fill="currentColor"/>
+                <rect x="2" y="4"    width="12" height="1.5" rx="0.75" fill="currentColor"/>
                 <rect x="2" y="7.25" width="12" height="1.5" rx="0.75" fill="currentColor"/>
                 <rect x="2" y="10.5" width="12" height="1.5" rx="0.75" fill="currentColor"/>
               </svg>
@@ -196,14 +198,23 @@ export default function Home() {
             {topic && (
               <>
                 <span style={{ fontSize: 17, lineHeight: 1, flexShrink: 0 }}>{topic.emoji}</span>
-                <span style={{ fontSize: 15, fontWeight: 600, color: '#f5f5f7', letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span style={{
+                  fontSize: 15, fontWeight: 600,
+                  color: '#ededf5',
+                  letterSpacing: '-0.02em',
+                  fontFamily: "'Space Grotesk', sans-serif",
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>
                   {topic.title}
                 </span>
                 <span style={{
                   fontSize: 11, fontWeight: 500,
-                  padding: '2px 8px', borderRadius: 20,
-                  background: 'rgba(10,132,255,0.15)', color: '#0a84ff',
-                  flexShrink: 0, display: isMobile ? 'none' : undefined,
+                  padding: '2px 9px', borderRadius: 20,
+                  background: 'rgba(79,142,247,0.12)',
+                  border: '1px solid rgba(79,142,247,0.22)',
+                  color: '#4f8ef7',
+                  flexShrink: 0,
+                  display: isMobile ? 'none' : undefined,
                 }}>
                   {topic.difficulty}
                 </span>
@@ -213,7 +224,7 @@ export default function Home() {
             <div style={{ flex: 1 }} />
 
             {/* Right controls */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
 
               {/* Prev / Next */}
               {[
@@ -228,14 +239,15 @@ export default function Home() {
                   style={{
                     width: 28, height: 28,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    borderRadius: 6,
-                    color: t ? 'rgba(245,245,247,0.50)' : 'rgba(245,245,247,0.18)',
+                    borderRadius: 7,
+                    color: t ? 'rgba(237,237,245,0.45)' : 'rgba(237,237,245,0.15)',
                     background: 'transparent',
-                    border: 'none', cursor: t ? 'pointer' : 'not-allowed',
-                    transition: 'background 0.15s, color 0.15s',
+                    border: '1px solid transparent',
+                    cursor: t ? 'pointer' : 'not-allowed',
+                    transition: 'all 0.15s',
                   }}
-                  onMouseEnter={e => { if (t) { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#f5f5f7'; } }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = t ? 'rgba(245,245,247,0.50)' : 'rgba(245,245,247,0.18)'; }}
+                  onMouseEnter={e => { if (t) { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)'; e.currentTarget.style.color = '#ededf5'; } }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.color = t ? 'rgba(237,237,245,0.45)' : 'rgba(237,237,245,0.15)'; }}
                 >
                   <svg width="11" height="16" viewBox="0 0 11 16" fill="none">
                     <path d={path} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -250,10 +262,14 @@ export default function Home() {
                   disabled={isComplete}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 5,
-                    padding: '5px 12px', borderRadius: 8, border: 'none',
-                    fontSize: 12, fontWeight: 500, cursor: isComplete ? 'default' : 'pointer',
-                    color: isComplete ? '#30d158' : 'rgba(245,245,247,0.70)',
-                    background: isComplete ? 'rgba(48,209,88,0.12)' : 'rgba(255,255,255,0.07)',
+                    padding: '5px 12px', borderRadius: 8,
+                    border: isComplete ? '1px solid rgba(52,211,153,0.30)' : '1px solid rgba(255,255,255,0.10)',
+                    fontSize: 12, fontWeight: 500,
+                    cursor: isComplete ? 'default' : 'pointer',
+                    color: isComplete ? '#34d399' : 'rgba(237,237,245,0.65)',
+                    background: isComplete ? 'rgba(52,211,153,0.10)' : 'rgba(255,255,255,0.05)',
+                    backdropFilter: 'blur(8px)',
+                    WebkitBackdropFilter: 'blur(8px)',
                     transition: 'all 0.15s',
                   }}
                 >
@@ -269,7 +285,7 @@ export default function Home() {
                 </button>
               )}
 
-              {/* User avatar + dropdown menu */}
+              {/* User avatar + dropdown */}
               <div ref={userMenuRef} style={{ position: 'relative' }}>
                 <button
                   onClick={() => setUserMenuOpen(o => !o)}
@@ -281,22 +297,23 @@ export default function Home() {
                     display: 'flex', alignItems: 'center', gap: 6,
                     padding: '3px 8px 3px 3px',
                     borderRadius: 8,
-                    color: 'rgba(245,245,247,0.45)',
-                    background: userMenuOpen ? 'rgba(255,255,255,0.08)' : 'transparent',
-                    border: 'none', cursor: 'pointer',
-                    transition: 'background 0.15s, color 0.15s',
+                    color: 'rgba(237,237,245,0.45)',
+                    background: userMenuOpen ? 'rgba(255,255,255,0.07)' : 'transparent',
+                    border: userMenuOpen ? '1px solid rgba(255,255,255,0.10)' : '1px solid transparent',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
                     flexShrink: 0,
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#f5f5f7'; }}
-                  onMouseLeave={e => { if (!userMenuOpen) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(245,245,247,0.45)'; } }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)'; e.currentTarget.style.color = '#ededf5'; }}
+                  onMouseLeave={e => { if (!userMenuOpen) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.color = 'rgba(237,237,245,0.45)'; } }}
                 >
                   {userAvatar ? (
                     <img
                       src={userAvatar}
                       alt=""
                       style={{
-                        width: 22, height: 22, borderRadius: '50%',
-                        border: '1.5px solid rgba(255,255,255,0.12)',
+                        width: 24, height: 24, borderRadius: '50%',
+                        border: '1.5px solid rgba(255,255,255,0.15)',
                       }}
                     />
                   ) : (
@@ -315,25 +332,28 @@ export default function Home() {
                   <div
                     role="menu"
                     aria-label="Account options"
+                    className="animate-slideDown"
                     style={{
-                      position: 'absolute', top: 'calc(100% + 6px)', right: 0,
-                      background: '#2c2c2e',
-                      border: '1px solid rgba(255,255,255,0.10)',
-                      borderRadius: 10,
+                      position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+                      background: 'rgba(10,10,20,0.92)',
+                      backdropFilter: 'blur(28px)',
+                      WebkitBackdropFilter: 'blur(28px)',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      borderRadius: 12,
                       padding: 6,
-                      minWidth: 170,
-                      boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                      minWidth: 180,
+                      boxShadow: '0 16px 48px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)',
                       zIndex: 100,
                     }}
                   >
                     {userName && (
                       <div style={{
-                        padding: '6px 10px 8px',
+                        padding: '7px 10px 9px',
                         borderBottom: '1px solid rgba(255,255,255,0.07)',
                         marginBottom: 4,
                       }}>
-                        <div style={{ fontSize: 11, color: 'rgba(245,245,247,0.35)', marginBottom: 1 }}>Signed in as</div>
-                        <div style={{ fontSize: 13, color: '#f5f5f7', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontSize: 11, color: 'rgba(237,237,245,0.32)', marginBottom: 2 }}>Signed in as</div>
+                        <div style={{ fontSize: 13, color: '#ededf5', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {userName}
                         </div>
                       </div>
@@ -344,11 +364,11 @@ export default function Home() {
                       style={{
                         display: 'flex', alignItems: 'center', gap: 8,
                         width: '100%', padding: '7px 10px',
-                        borderRadius: 7, border: 'none', cursor: 'pointer',
-                        background: 'transparent', color: 'rgba(245,245,247,0.80)',
-                        fontSize: 13, textAlign: 'left', transition: 'background 0.1s',
+                        borderRadius: 8, border: 'none', cursor: 'pointer',
+                        background: 'transparent', color: 'rgba(237,237,245,0.75)',
+                        fontSize: 13, textAlign: 'left', transition: 'background 0.12s',
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
                       onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -363,11 +383,11 @@ export default function Home() {
                       style={{
                         display: 'flex', alignItems: 'center', gap: 8,
                         width: '100%', padding: '7px 10px',
-                        borderRadius: 7, border: 'none', cursor: 'pointer',
-                        background: 'transparent', color: 'rgba(255,69,58,0.85)',
-                        fontSize: 13, textAlign: 'left', transition: 'background 0.1s',
+                        borderRadius: 8, border: 'none', cursor: 'pointer',
+                        background: 'transparent', color: 'rgba(248,113,113,0.85)',
+                        fontSize: 13, textAlign: 'left', transition: 'background 0.12s',
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,69,58,0.10)'; }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(248,113,113,0.08)'; }}
                       onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -383,8 +403,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Row 2 — Tabs */}
-          <div style={{ display: 'flex', alignItems: 'flex-end', padding: '0 16px', gap: 0 }}>
+          {/* Row 2 — Pill Tabs */}
+          <div style={{ display: 'flex', alignItems: 'center', padding: '6px 12px 8px', gap: 3 }}>
             {TABS.map(tab => {
               const active = activeTab === tab.id;
               return (
@@ -392,18 +412,19 @@ export default function Home() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   style={{
-                    padding: '8px 14px',
+                    padding: '5px 14px',
                     fontSize: 13,
                     fontWeight: active ? 500 : 400,
-                    color: active ? '#f5f5f7' : 'rgba(245,245,247,0.45)',
-                    background: 'transparent',
-                    border: 'none',
-                    borderBottom: active ? '2px solid #0a84ff' : '2px solid transparent',
+                    color: active ? '#ededf5' : 'rgba(237,237,245,0.42)',
+                    background: active ? 'rgba(79,142,247,0.15)' : 'transparent',
+                    border: active ? '1px solid rgba(79,142,247,0.28)' : '1px solid transparent',
+                    borderRadius: 8,
                     cursor: 'pointer',
-                    transition: 'color 0.15s, border-color 0.15s',
-                    marginBottom: -1,
+                    transition: 'all 0.15s',
                     letterSpacing: '-0.005em',
                   }}
+                  onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(237,237,245,0.70)'; } }}
+                  onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(237,237,245,0.42)'; } }}
                 >
                   {tab.label}
                 </button>
@@ -413,7 +434,7 @@ export default function Home() {
         </header>
 
         {/* ── Content ── */}
-        <main style={{ flex: 1, overflowY: 'auto', background: '#000' }}>
+        <main style={{ flex: 1, overflowY: 'auto', background: 'transparent' }}>
           {topic ? (
             <div
               key={`${currentId}-${activeTab}`}
@@ -426,7 +447,7 @@ export default function Home() {
               {activeTab === 'ask'      && <AskTab      topic={topic} provider={provider} />}
             </div>
           ) : (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'rgba(245,245,247,0.25)', fontSize: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'rgba(237,237,245,0.25)', fontSize: 14 }}>
               Select a topic to begin
             </div>
           )}
@@ -436,13 +457,16 @@ export default function Home() {
         {isMobile && topic && (
           <div style={{
             position: 'fixed', bottom: 0, left: 0, right: 0,
-            background: '#1c1c1e',
-            borderTop: '1px solid rgba(255,255,255,0.08)',
+            background: 'rgba(7,7,15,0.88)',
+            backdropFilter: 'blur(28px)',
+            WebkitBackdropFilter: 'blur(28px)',
+            borderTop: '1px solid rgba(255,255,255,0.09)',
             display: 'flex',
             alignItems: 'center',
             padding: '6px 8px 6px',
             gap: 4,
             paddingBottom: 'max(6px, env(safe-area-inset-bottom))',
+            zIndex: 50,
           }}>
             {TABS.map(tab => (
               <button
@@ -453,9 +477,10 @@ export default function Home() {
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
                   padding: '6px 4px',
                   borderRadius: 10,
-                  border: 'none', cursor: 'pointer',
-                  background: activeTab === tab.id ? 'rgba(10,132,255,0.12)' : 'transparent',
-                  color: activeTab === tab.id ? '#0a84ff' : 'rgba(245,245,247,0.35)',
+                  border: activeTab === tab.id ? '1px solid rgba(79,142,247,0.28)' : '1px solid transparent',
+                  cursor: 'pointer',
+                  background: activeTab === tab.id ? 'rgba(79,142,247,0.14)' : 'transparent',
+                  color: activeTab === tab.id ? '#4f8ef7' : 'rgba(237,237,245,0.35)',
                   transition: 'all 0.15s',
                   fontSize: 10,
                   fontWeight: activeTab === tab.id ? 500 : 400,
@@ -472,11 +497,11 @@ export default function Home() {
                 flexShrink: 0,
                 padding: '6px 14px',
                 borderRadius: 10,
-                border: 'none',
+                border: isComplete ? '1px solid rgba(52,211,153,0.30)' : '1px solid rgba(255,255,255,0.10)',
                 fontSize: 12, fontWeight: 500,
                 cursor: isComplete ? 'default' : 'pointer',
-                color: isComplete ? '#30d158' : 'rgba(245,245,247,0.70)',
-                background: isComplete ? 'rgba(48,209,88,0.12)' : 'rgba(255,255,255,0.07)',
+                color: isComplete ? '#34d399' : 'rgba(237,237,245,0.65)',
+                background: isComplete ? 'rgba(52,211,153,0.10)' : 'rgba(255,255,255,0.06)',
               }}
             >
               {isComplete ? '✓' : 'Done'}
