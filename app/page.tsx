@@ -442,7 +442,7 @@ export default function Home() {
               style={{ maxWidth: 740, margin: '0 auto', padding: isMobile ? '24px 16px 100px' : '32px 24px 48px' }}
             >
               {activeTab === 'learn'    && <LearnTab    topic={topic} provider={provider} completed={isComplete} onComplete={markComplete} isMobile={isMobile} />}
-              {activeTab === 'diagram'  && <DiagramTab  topic={topic} />}
+              {activeTab === 'diagram'  && <DiagramTab  topic={topic} provider={provider} />}
               {activeTab === 'practice' && <PracticeTab topic={topic} />}
               {activeTab === 'ask'      && <AskTab      topic={topic} provider={provider} />}
             </div>

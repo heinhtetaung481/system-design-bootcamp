@@ -152,6 +152,91 @@ export async function generateAskResponse(
   throw new Error(`Unknown provider: ${provider}`);
 }
 
+const DIAGRAM_SYSTEM_PROMPT = `You are an expert system design architect. Generate a visual architecture diagram as JSON.
+
+Given a description of a system or architecture, output ONLY a valid JSON object with this exact structure:
+{
+  "title": "Descriptive diagram title",
+  "nodes": [
+    {
+      "id": "unique_snake_case_id",
+      "label": "Display Label",
+      "sublabel": "optional small text",
+      "shape": "rect",
+      "color": "#4F9DFF",
+      "x": 100,
+      "y": 100,
+      "width": 140,
+      "height": 50
+    }
+  ],
+  "edges": [
+    {
+      "from": "source_node_id",
+      "to": "target_node_id",
+      "label": "optional edge label",
+      "dashed": false
+    }
+  ]
+}
+
+SHAPE GUIDE:
+- "rect" → services, APIs, servers, components (default)
+- "cylinder" → databases, storage (DB, Redis, S3) — use height: 70
+- "diamond" → load balancers, routers, gateways
+- "circle" → users, clients, external services
+
+COLOR PALETTE (use exactly):
+- #4F9DFF → blue: services, APIs, application layers
+- #00D68F → green: CDN, cache, success paths
+- #FF8C42 → orange: load balancers, gateways, middleware
+- #9B7FFF → purple: queues, async workers, background jobs
+- #00D4FF → cyan: databases, storage
+- #FF5470 → red: external services, user clients
+
+LAYOUT RULES:
+- Use x: 50–850, y: 50–550 coordinate space
+- Default node: width=140, height=50; cylinder: height=70
+- At least 170px horizontal gap, 80px vertical gap between nodes
+- Flow left→right or top→bottom; users/clients on left, databases on right/bottom
+- Max 12 nodes
+
+OUTPUT: ONLY the JSON object. No markdown. No explanation. No code fences.`;
+
+export async function generateDiagram(
+  provider: ModelProvider,
+  prompt: string
+): Promise<string> {
+  const userMessage = `Generate an architecture diagram for: ${prompt}`;
+
+  if (provider === 'anthropic') {
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const response = await client.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      system: DIAGRAM_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: userMessage }],
+    });
+    const block = response.content.find(c => c.type === 'text');
+    return block?.type === 'text' ? block.text : '{}';
+  }
+
+  if (provider === 'openai') {
+    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o',
+      max_tokens: 2000,
+      messages: [
+        { role: 'system', content: DIAGRAM_SYSTEM_PROMPT },
+        { role: 'user', content: userMessage },
+      ],
+    });
+    return response.choices[0]?.message?.content ?? '{}';
+  }
+
+  throw new Error(`Unknown provider: ${provider}`);
+}
+
 export const MODEL_OPTIONS = [
   {
     id: 'anthropic' as ModelProvider,
