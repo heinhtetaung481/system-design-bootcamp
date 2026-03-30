@@ -39,7 +39,8 @@ interface SavedDiagram {
   mode: 'mcp' | 'scratchpad';
   createdAt: string;
   diagram?: GeneratedDiagram;
-  imageData?: string;
+  imageData?: string;   // legacy localStorage (unused)
+  imageUrl?: string;    // signed URL from Supabase storage
 }
 
 type DiagramMode = 'architecture' | 'mcp' | 'scratchpad';
@@ -49,21 +50,7 @@ type DrawTool = 'pen' | 'rect' | 'arrow' | 'eraser';
 
 const NODE_W = 140;
 const NODE_H = 50;
-const STORAGE_KEY = 'sdb_diagrams';
 const COLORS = ['#ededf5', '#4F9DFF', '#00D68F', '#FF8C42', '#9B7FFF', '#00D4FF', '#FF5470'];
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
-
-function loadSavedDiagrams(): SavedDiagram[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
-}
-
-function persistDiagrams(diagrams: SavedDiagram[]) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(diagrams)); } catch { /* ignore */ }
-}
 
 function getEdgePoint(node: DiagramNode, fromX: number, fromY: number): [number, number] {
   const w = (node.width || NODE_W) / 2;
@@ -164,11 +151,15 @@ function downloadExcalidraw(diagram: GeneratedDiagram, title: string) {
   URL.revokeObjectURL(url);
 }
 
-function downloadPNG(dataUrl: string, title: string) {
+async function downloadPNG(url: string, title: string) {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  const blobUrl = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = dataUrl;
+  a.href = blobUrl;
   a.download = `${title.replace(/\s+/g, '-').toLowerCase()}.png`;
   a.click();
+  URL.revokeObjectURL(blobUrl);
 }
 
 // ── SVG Diagram Renderer ───────────────────────────────────────────────────────
@@ -649,9 +640,9 @@ function SavedDiagramCard({
           <div style={{ width: '100%', padding: '8px 6px', transform: 'scale(0.85)', transformOrigin: 'top center' }}>
             <DiagramPreviewSVG diagram={saved.diagram} />
           </div>
-        ) : saved.imageData ? (
+        ) : saved.imageUrl ? (
           <img
-            src={saved.imageData}
+            src={saved.imageUrl}
             alt={saved.title}
             style={{ width: '100%', display: 'block', borderRadius: 6 }}
           />
@@ -687,9 +678,9 @@ function SavedDiagramCard({
             .excalidraw
           </button>
         )}
-        {saved.mode === 'scratchpad' && saved.imageData && (
+        {saved.mode === 'scratchpad' && saved.imageUrl && (
           <button
-            onClick={() => downloadPNG(saved.imageData!, saved.title)}
+            onClick={() => downloadPNG(saved.imageUrl!, saved.title)}
             style={{
               flex: 1, padding: '6px 0', borderRadius: 7, fontSize: 12, fontWeight: 500,
               background: 'rgba(0,214,143,0.10)',
@@ -762,9 +753,9 @@ function ExpandedView({ saved, onClose }: { saved: SavedDiagram; onClose: () => 
                 Export .excalidraw
               </button>
             )}
-            {saved.mode === 'scratchpad' && saved.imageData && (
+            {saved.mode === 'scratchpad' && saved.imageUrl && (
               <button
-                onClick={() => downloadPNG(saved.imageData!, saved.title)}
+                onClick={() => downloadPNG(saved.imageUrl!, saved.title)}
                 style={{
                   padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 500,
                   background: 'rgba(0,214,143,0.15)',
@@ -798,8 +789,8 @@ function ExpandedView({ saved, onClose }: { saved: SavedDiagram; onClose: () => 
         }}>
           {saved.mode === 'mcp' && saved.diagram ? (
             <DiagramPreviewSVG diagram={saved.diagram} />
-          ) : saved.imageData ? (
-            <img src={saved.imageData} alt={saved.title} style={{ width: '100%', display: 'block', borderRadius: 8 }} />
+          ) : saved.imageUrl ? (
+            <img src={saved.imageUrl} alt={saved.title} style={{ width: '100%', display: 'block', borderRadius: 8 }} />
           ) : null}
         </div>
       </div>
@@ -831,15 +822,21 @@ export default function DiagramTab({
   // Saved diagrams
   const [savedDiagrams, setSavedDiagrams] = useState<SavedDiagram[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [loadingDiagrams, setLoadingDiagrams] = useState(true);
 
-  useEffect(() => {
-    setSavedDiagrams(loadSavedDiagrams());
+  const fetchDiagrams = useCallback(async () => {
+    try {
+      const res = await fetch('/api/diagrams');
+      if (!res.ok) return;
+      const data = await res.json();
+      setSavedDiagrams(data.diagrams || []);
+    } catch { /* ignore */ }
+    finally { setLoadingDiagrams(false); }
   }, []);
 
-  const persistAndSet = (updated: SavedDiagram[]) => {
-    setSavedDiagrams(updated);
-    persistDiagrams(updated);
-  };
+  useEffect(() => {
+    fetchDiagrams();
+  }, [fetchDiagrams]);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
@@ -863,37 +860,59 @@ export default function DiagramTab({
     }
   };
 
-  const handleMcpSave = () => {
+  const handleMcpSave = async () => {
     if (!generatedDiagram || !mcpSaveTitle.trim()) return;
-    const entry: SavedDiagram = {
-      id: `mcp-${Date.now()}`,
-      title: mcpSaveTitle.trim(),
-      topicId: topic.id,
-      topicTitle: topic.title,
-      mode: 'mcp',
-      createdAt: new Date().toISOString(),
-      diagram: generatedDiagram,
-    };
-    persistAndSet([entry, ...savedDiagrams]);
-    setMcpSaved(true);
-    setTimeout(() => setMcpSaved(false), 2000);
+    try {
+      const res = await fetch('/api/diagrams', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: mcpSaveTitle.trim(),
+          topicId: topic.id,
+          topicTitle: topic.title,
+          mode: 'mcp',
+          diagram: generatedDiagram,
+        }),
+      });
+      if (!res.ok) throw new Error('Save failed');
+      const data = await res.json();
+      setSavedDiagrams(prev => [data.diagram, ...prev]);
+      setMcpSaved(true);
+      setTimeout(() => setMcpSaved(false), 2000);
+    } catch (err) {
+      console.error('Failed to save MCP diagram:', err);
+    }
   };
 
-  const handleScratchpadSave = (dataUrl: string, title: string) => {
-    const entry: SavedDiagram = {
-      id: `sketch-${Date.now()}`,
-      title,
-      topicId: topic.id,
-      topicTitle: topic.title,
-      mode: 'scratchpad',
-      createdAt: new Date().toISOString(),
-      imageData: dataUrl,
-    };
-    persistAndSet([entry, ...savedDiagrams]);
+  const handleScratchpadSave = async (dataUrl: string, title: string) => {
+    try {
+      const res = await fetch('/api/diagrams', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          topicId: topic.id,
+          topicTitle: topic.title,
+          mode: 'scratchpad',
+          imageData: dataUrl,
+        }),
+      });
+      if (!res.ok) throw new Error('Save failed');
+      const data = await res.json();
+      setSavedDiagrams(prev => [data.diagram, ...prev]);
+    } catch (err) {
+      console.error('Failed to save scratchpad diagram:', err);
+    }
   };
 
-  const handleDelete = (id: string) => {
-    persistAndSet(savedDiagrams.filter(d => d.id !== id));
+  const handleDelete = async (id: string) => {
+    setSavedDiagrams(prev => prev.filter(d => d.id !== id));
+    try {
+      await fetch(`/api/diagrams?id=${id}`, { method: 'DELETE' });
+    } catch (err) {
+      console.error('Failed to delete diagram:', err);
+      fetchDiagrams(); // re-fetch on error to restore state
+    }
   };
 
   const expandedDiagram = expandedId ? savedDiagrams.find(d => d.id === expandedId) : null;
