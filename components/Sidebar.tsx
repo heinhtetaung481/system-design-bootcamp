@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CURRICULUM } from '@/lib/curriculum';
+import type { Phase } from '@/modules/curriculum/types';
 
 interface SidebarProps {
   currentId: string;
@@ -10,18 +10,18 @@ interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   isMobile: boolean;
+  curriculum: Phase[];
 }
 
-const totalTopics = CURRICULUM.reduce(
-  (acc, p) => acc + p.weeks.reduce((a, w) => a + w.topics.length, 0),
-  0
-);
-
-export default function Sidebar({ currentId, completed, onSelect, isOpen, onClose, isMobile }: SidebarProps) {
+export default function Sidebar({ currentId, completed, onSelect, isOpen, onClose, isMobile, curriculum }: SidebarProps) {
+  const totalTopics = curriculum.reduce(
+    (acc, p) => acc + p.weeks.reduce((a, w) => a + w.topics.length, 0),
+    0
+  );
   const completedCount = completed.size;
-  const progress = Math.round((completedCount / totalTopics) * 100);
+  const progress = totalTopics > 0 ? Math.round((completedCount / totalTopics) * 100) : 0;
 
-  const currentPhaseIdx = CURRICULUM.findIndex(p =>
+  const currentPhaseIdx = curriculum.findIndex(p =>
     p.weeks.some(w => w.topics.some(t => t.id === currentId))
   );
 
@@ -125,7 +125,7 @@ export default function Sidebar({ currentId, completed, onSelect, isOpen, onClos
 
         {/* Nav */}
         <div className="flex-1 overflow-y-auto" style={{ padding: '8px 8px' }}>
-          {CURRICULUM.map((phase, phaseIdx) => {
+          {curriculum.map((phase, phaseIdx) => {
             const isExpanded = expandedPhases.has(phaseIdx);
             const phaseTopics = phase.weeks.flatMap(w => w.topics);
             const phaseDone = phaseTopics.filter(t => completed.has(t.id)).length;

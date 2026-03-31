@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateLesson } from '@/lib/ai-providers';
-import { ModelProvider } from '@/types';
+import { generateLesson } from '@/modules/generation';
+import { createServerSupabaseClient } from '@/modules/identity';
+import type { ModelProvider } from '@/modules/prompt-templates/types';
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,9 +11,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Try to use Supabase cache (optional — skip if env vars not configured)
     try {
-      const { createServerSupabaseClient } = await import('@/lib/supabase');
       const supabase = createServerSupabaseClient();
 
       if (!forceRegenerate) {
@@ -32,10 +31,8 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Generate new lesson
       const content = await generateLesson(provider as ModelProvider, topicTitle, keyPoints);
 
-      // Store in Supabase
       await supabase
         .from('lessons')
         .upsert(
@@ -45,7 +42,6 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json({ content, cached: false });
     } catch (supabaseError) {
-      // Supabase not configured — generate directly without caching
       const content = await generateLesson(provider as ModelProvider, topicTitle, keyPoints);
       return NextResponse.json({ content, cached: false });
     }

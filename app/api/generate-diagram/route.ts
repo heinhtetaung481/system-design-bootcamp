@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateDiagram } from '@/lib/ai-providers';
-import { ModelProvider } from '@/types';
+import { generateDiagram } from '@/modules/generation';
+import type { ModelProvider } from '@/modules/prompt-templates/types';
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,7 +9,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'prompt is required' }, { status: 400 });
     }
     const raw = await generateDiagram((provider as ModelProvider) || 'anthropic', prompt);
-    // Strip any markdown code fences if the model wraps the JSON
     const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
     const diagram = JSON.parse(cleaned);
     return NextResponse.json({ diagram });

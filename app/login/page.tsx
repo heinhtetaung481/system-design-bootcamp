@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { createClient } from '@/lib/supabase-browser';
+import { createClient } from '@/modules/identity/lib/supabase-browser';
 
 export default function LoginPage() {
   const [error, setError] = useState('');

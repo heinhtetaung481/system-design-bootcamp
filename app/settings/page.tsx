@@ -2,9 +2,9 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase-browser';
-import { MODEL_OPTIONS } from '@/lib/ai-providers';
-import { ModelProvider } from '@/types';
+import { createClient } from '@/modules/identity/lib/supabase-browser';
+import { MODEL_OPTIONS } from '@/modules/generation';
+import type { ModelProvider } from '@/modules/prompt-templates/types';
 
 function SettingsContent() {
   const router = useRouter();

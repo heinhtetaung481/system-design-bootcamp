@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Topic } from '@/types';
+import type { Topic } from '@/modules/curriculum/types';
 
 export default function PracticeTab({ topic }: { topic: Topic }) {
   const [revealed, setRevealed] = useState<Record<number, boolean>>({});

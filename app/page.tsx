@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ModelProvider } from '@/types';
-import { getTopicById, getAllTopics } from '@/lib/curriculum';
-import { createClient } from '@/lib/supabase-browser';
+import type { ModelProvider } from '@/modules/prompt-templates/types';
+import type { Phase, Topic } from '@/modules/curriculum/types';
+import { createClient } from '@/modules/identity/lib/supabase-browser';
 import Sidebar from '@/components/Sidebar';
 import LearnTab from '@/components/LearnTab';
 import DiagramTab from '@/components/DiagramTab';
@@ -21,6 +21,8 @@ const TABS: { id: Tab; label: string; emoji: string }[] = [
 ];
 
 export default function Home() {
+  type EnrichedTopic = Topic & { phaseTitle: string; phaseColor: string; weekTitle: string };
+
   const router = useRouter();
   const [currentId,   setCurrentId]   = useState('networking');
   const [activeTab,   setActiveTab]   = useState<Tab>('learn');
@@ -33,6 +35,20 @@ export default function Home() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [settingsLoading, setSettingsLoading] = useState(true);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // DB-backed curriculum
+  const [curriculum, setCurriculum] = useState<Phase[]>([]);
+  const [allTopics, setAllTopics] = useState<EnrichedTopic[]>([]);
+
+  useEffect(() => {
+    fetch('/api/curriculum')
+      .then(res => res.json())
+      .then(data => {
+        setCurriculum(data.curriculum || []);
+        setAllTopics(data.allTopics || []);
+      })
+      .catch(() => { /* will show empty state briefly */ });
+  }, []);
 
   useEffect(() => {
     if (window.location.search.includes('code=')) {
@@ -72,11 +88,14 @@ export default function Home() {
     return () => window.removeEventListener('resize', check);
   }, []);
 
+  // Load progress from DB
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('sdb_progress');
-      if (saved) setCompleted(new Set(JSON.parse(saved)));
-    } catch { /* ignore */ }
+    fetch('/api/progress')
+      .then(res => res.json())
+      .then(data => {
+        if (data.completedTopics) setCompleted(new Set(data.completedTopics));
+      })
+      .catch(() => { /* ignore */ });
   }, []);
 
   useEffect(() => {
@@ -96,15 +115,16 @@ export default function Home() {
     };
   }, []);
 
-  const saveProgress = (s: Set<string>) => {
-    try { localStorage.setItem('sdb_progress', JSON.stringify([...s])); } catch { /* ignore */ }
-  };
-
   const markComplete = () => {
     const n = new Set(completed);
     n.add(currentId);
     setCompleted(n);
-    saveProgress(n);
+    // Persist to DB
+    fetch('/api/progress', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ topicId: currentId }),
+    }).catch(() => { /* ignore */ });
   };
 
   const handleTopicSelect = (id: string) => {
@@ -119,9 +139,8 @@ export default function Home() {
     window.location.href = '/login';
   };
 
-  const topic      = getTopicById(currentId);
+  const topic      = allTopics.find(t => t.id === currentId) || null;
   const isComplete = completed.has(currentId);
-  const allTopics  = getAllTopics();
   const idx        = allTopics.findIndex(t => t.id === currentId);
   const prevTopic  = idx > 0 ? allTopics[idx - 1] : null;
   const nextTopic  = idx < allTopics.length - 1 ? allTopics[idx + 1] : null;
@@ -144,6 +163,7 @@ export default function Home() {
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         isMobile={isMobile}
+        curriculum={curriculum}
       />
 
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, overflow: 'hidden' }}>

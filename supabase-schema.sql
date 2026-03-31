@@ -124,6 +124,56 @@ CREATE POLICY "Users can delete own diagram images"
     AND (storage.foldername(name))[1] = auth.uid()::text
   );
 
+-- Curriculum content (versioned, one active row at a time)
+CREATE TABLE IF NOT EXISTS curriculum_versions (
+  id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  label       text        NOT NULL,
+  content     jsonb       NOT NULL,
+  is_active   boolean     NOT NULL DEFAULT false,
+  created_at  timestamptz DEFAULT now(),
+  updated_at  timestamptz DEFAULT now()
+);
+
+CREATE INDEX idx_curriculum_active ON curriculum_versions (is_active) WHERE is_active = true;
+
+-- Prompt templates (system defaults + per-user overrides)
+CREATE TABLE IF NOT EXISTS prompt_templates (
+  id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug        text        NOT NULL,
+  title       text        NOT NULL,
+  content     text        NOT NULL,
+  user_id     uuid,
+  created_at  timestamptz DEFAULT now(),
+  updated_at  timestamptz DEFAULT now(),
+  UNIQUE(slug, user_id)
+);
+
+CREATE INDEX idx_prompt_templates_slug ON prompt_templates (slug);
+CREATE INDEX idx_prompt_templates_user ON prompt_templates (user_id) WHERE user_id IS NOT NULL;
+
+ALTER TABLE prompt_templates ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can read system defaults"
+  ON prompt_templates FOR SELECT
+  USING (user_id IS NULL);
+
+CREATE POLICY "Users can read own template overrides"
+  ON prompt_templates FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own template overrides"
+  ON prompt_templates FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own template overrides"
+  ON prompt_templates FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own template overrides"
+  ON prompt_templates FOR DELETE
+  USING (auth.uid() = user_id);
+
 -- Optional: enable Row Level Security on other tables
 -- ALTER TABLE lessons ENABLE ROW LEVEL SECURITY;
 -- ALTER TABLE ask_responses ENABLE ROW LEVEL SECURITY;

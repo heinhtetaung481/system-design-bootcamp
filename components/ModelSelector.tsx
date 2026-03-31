@@ -1,7 +1,7 @@
 'use client';
 
-import { ModelProvider } from '@/types';
-import { MODEL_OPTIONS } from '@/lib/ai-providers';
+import type { ModelProvider } from '@/modules/prompt-templates/types';
+import { MODEL_OPTIONS } from '@/modules/generation';
 
 interface ModelSelectorProps {
   provider: ModelProvider;

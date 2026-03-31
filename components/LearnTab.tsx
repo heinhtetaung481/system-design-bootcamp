@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Topic, ModelProvider } from '@/types';
-import { DIAGRAMS } from './diagrams';
+import type { Topic } from '@/modules/curriculum/types';
+import type { ModelProvider } from '@/modules/prompt-templates/types';
+import { DIAGRAMS } from '@/modules/curriculum/lib/diagrams';
 
 interface LearnTabProps {
   topic: Topic;

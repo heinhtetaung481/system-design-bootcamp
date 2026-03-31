@@ -1,8 +1,6 @@
-import Anthropic from '@anthropic-ai/sdk';
-import OpenAI from 'openai';
-import { ModelProvider } from '@/types';
+import type { ModelProvider } from '@/modules/prompt-templates/types';
 
-const LESSON_SYSTEM_PROMPT = `You are an expert system design instructor at a FAANG company teaching a senior software engineer who is a visual learner preparing for system design interviews. Write a comprehensive, deeply detailed lesson.
+export const FALLBACK_LESSON_PROMPT = `You are an expert system design instructor at a FAANG company teaching a senior software engineer who is a visual learner preparing for system design interviews. Write a comprehensive, deeply detailed lesson.
 
 CRITICAL RULES:
 - Write COMPLETE content — do NOT truncate. Every section must be fully written.
@@ -79,80 +77,9 @@ FORMAT STRUCTURE:
 
 Write with the depth of a senior staff engineer. Use real product names, real numbers, real failure stories. NEVER write placeholder text. Complete every section fully.`;
 
-export async function generateLesson(
-  provider: ModelProvider,
-  topicTitle: string,
-  keyPoints: string[]
-): Promise<string> {
-  const userMessage = `Teach me about: ${topicTitle}\n\nContext from curriculum:\n${keyPoints.map(k => `- ${k}`).join('\n')}\n\nWrite a complete, comprehensive lesson covering all sections. Do not cut off or summarize — write everything in full.`;
+export const FALLBACK_ASK_TEMPLATE = `You are an expert system design instructor. The student is a senior software engineer studying "{{topicTitle}}". Answer their question clearly and practically. Use concrete examples, real numbers, and reference actual systems where relevant. Format with HTML: <p>, <strong>, <ul><li> as needed. Be direct — no padding. Always write complete answers — never truncate.`;
 
-  if (provider === 'anthropic') {
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4000,
-      system: LESSON_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: userMessage }],
-    });
-    const block = response.content.find(c => c.type === 'text');
-    return block?.type === 'text' ? block.text : 'Unable to generate content.';
-  }
-
-  if (provider === 'openai') {
-    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    const response = await client.chat.completions.create({
-      model: 'gpt-4o',
-      max_tokens: 4000,
-      messages: [
-        { role: 'system', content: LESSON_SYSTEM_PROMPT },
-        { role: 'user', content: userMessage },
-      ],
-    });
-    return response.choices[0]?.message?.content ?? 'Unable to generate content.';
-  }
-
-  throw new Error(`Unknown provider: ${provider}`);
-}
-
-const ASK_SYSTEM_TEMPLATE = (topicTitle: string) =>
-  `You are an expert system design instructor. The student is a senior software engineer studying "${topicTitle}". Answer their question clearly and practically. Use concrete examples, real numbers, and reference actual systems where relevant. Format with HTML: <p>, <strong>, <ul><li> as needed. Be direct — no padding. Always write complete answers — never truncate.`;
-
-export async function generateAskResponse(
-  provider: ModelProvider,
-  topicTitle: string,
-  question: string
-): Promise<string> {
-  const systemPrompt = ASK_SYSTEM_TEMPLATE(topicTitle);
-
-  if (provider === 'anthropic') {
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 2000,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: question }],
-    });
-    const block = response.content.find(c => c.type === 'text');
-    return block?.type === 'text' ? block.text : 'Unable to get response.';
-  }
-
-  if (provider === 'openai') {
-    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    const response = await client.chat.completions.create({
-      model: 'gpt-4o',
-      max_tokens: 2000,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: question },
-      ],
-    });
-    return response.choices[0]?.message?.content ?? 'Unable to get response.';
-  }
-
-  throw new Error(`Unknown provider: ${provider}`);
-}
-
-const DIAGRAM_SYSTEM_PROMPT = `You are an expert system design architect. Generate a visual architecture diagram as JSON.
+export const FALLBACK_DIAGRAM_PROMPT = `You are an expert system design architect. Generate a visual architecture diagram as JSON.
 
 Given a description of a system or architecture, output ONLY a valid JSON object with this exact structure:
 {
@@ -203,53 +130,13 @@ LAYOUT RULES:
 
 OUTPUT: ONLY the JSON object. No markdown. No explanation. No code fences.`;
 
-export async function generateDiagram(
-  provider: ModelProvider,
-  prompt: string
-): Promise<string> {
-  const userMessage = `Generate an architecture diagram for: ${prompt}`;
-
-  if (provider === 'anthropic') {
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 2000,
-      system: DIAGRAM_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: userMessage }],
-    });
-    const block = response.content.find(c => c.type === 'text');
-    return block?.type === 'text' ? block.text : '{}';
-  }
-
-  if (provider === 'openai') {
-    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    const response = await client.chat.completions.create({
-      model: 'gpt-4o',
-      max_tokens: 2000,
-      messages: [
-        { role: 'system', content: DIAGRAM_SYSTEM_PROMPT },
-        { role: 'user', content: userMessage },
-      ],
-    });
-    return response.choices[0]?.message?.content ?? '{}';
-  }
-
-  throw new Error(`Unknown provider: ${provider}`);
-}
-
-export const MODEL_OPTIONS = [
-  {
-    id: 'anthropic' as ModelProvider,
-    name: 'Claude Sonnet',
-    model: 'claude-sonnet-4-20250514',
-    description: 'Anthropic — Best for nuanced explanations',
-    color: '#FF8C42',
-  },
-  {
-    id: 'openai' as ModelProvider,
-    name: 'GPT-4o',
-    model: 'gpt-4o',
-    description: 'OpenAI — Strong technical content',
-    color: '#10A37F',
-  },
+export const MODEL_OPTIONS: Array<{
+  id: ModelProvider;
+  name: string;
+  model: string;
+  description: string;
+  color: string;
+}> = [
+  { id: 'anthropic', name: 'Claude Sonnet', model: 'claude-sonnet-4-20250514', description: 'Anthropic — Best for nuanced explanations', color: '#FF8C42' },
+  { id: 'openai', name: 'GPT-4o', model: 'gpt-4o', description: 'OpenAI — Strong technical content', color: '#10A37F' },
 ];

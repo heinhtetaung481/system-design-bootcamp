@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateAskResponse } from '@/lib/ai-providers';
-import { ModelProvider } from '@/types';
+import { generateAskResponse } from '@/modules/generation';
+import { createServerSupabaseClient } from '@/modules/identity';
+import type { ModelProvider } from '@/modules/prompt-templates/types';
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,12 +11,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Generate response
     const answer = await generateAskResponse(provider as ModelProvider, topicTitle, question);
 
-    // Store in Supabase (best effort — skip if not configured)
+    // Store in Supabase (best effort)
     try {
-      const { createServerSupabaseClient } = await import('@/lib/supabase');
       const supabase = createServerSupabaseClient();
       await supabase.from('ask_responses').insert({
         topic_id: topicId,
@@ -23,9 +22,7 @@ export async function POST(req: NextRequest) {
         question,
         answer,
       });
-    } catch {
-      // Supabase not configured, skip
-    }
+    } catch { /* Supabase not configured, skip */ }
 
     return NextResponse.json({ answer });
   } catch (error) {

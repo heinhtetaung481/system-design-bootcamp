@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Topic, ModelProvider } from '@/types';
+import type { Topic } from '@/modules/curriculum/types';
+import type { ModelProvider } from '@/modules/prompt-templates/types';
 
 export default function AskTab({ topic, provider }: { topic: Topic; provider: ModelProvider }) {
   const [question, setQuestion] = useState('');
