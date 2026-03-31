@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { Topic } from '@/modules/curriculum/types';
-import type { ModelProvider } from '@/modules/prompt-templates/types';
+
 import { DIAGRAMS } from '@/modules/curriculum/lib/diagrams';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -803,10 +803,10 @@ function ExpandedView({ saved, onClose }: { saved: SavedDiagram; onClose: () => 
 
 export default function DiagramTab({
   topic,
-  provider = 'anthropic',
+  modelId = 'meta-llama/llama-4-scout:free',
 }: {
   topic: Topic;
-  provider?: ModelProvider;
+  modelId?: string;
 }) {
   const DiagramComp = topic.diagramId ? DIAGRAMS[topic.diagramId] : null;
 
@@ -848,7 +848,7 @@ export default function DiagramTab({
       const res = await fetch('/api/generate-diagram', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: prompt.trim(), provider }),
+        body: JSON.stringify({ prompt: prompt.trim(), modelId }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Generation failed');

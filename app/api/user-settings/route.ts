@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/modules/identity/lib/supabase-server';
-import { getUserSettings, updateUserSettings } from '@/modules/identity';
-import type { ModelProvider } from '@/modules/prompt-templates/types';
+import { getUserSettings, updateUserSettings, getUserApiKey, updateUserApiKey } from '@/modules/identity';
 
 export async function GET() {
   const supabase = await createClient();
@@ -10,7 +9,12 @@ export async function GET() {
 
   try {
     const selectedModel = await getUserSettings(supabase, user.id);
-    return NextResponse.json({ selectedModel });
+    const openrouterApiKey = await getUserApiKey(supabase, user.id);
+    // Mask the key — only return whether one exists, and last 4 chars for UX confirmation
+    const maskedKey = openrouterApiKey
+      ? `sk-or-...${openrouterApiKey.slice(-4)}`
+      : null;
+    return NextResponse.json({ selectedModel, openrouterApiKey: maskedKey, hasOwnKey: !!openrouterApiKey });
   } catch (error) {
     console.error('user_settings GET error:', error);
     return NextResponse.json({ error: 'Database error' }, { status: 500 });
@@ -23,12 +27,25 @@ export async function PUT(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { selectedModel } = await req.json();
-    if (!['anthropic', 'openai'].includes(selectedModel)) {
-      return NextResponse.json({ error: 'Invalid model' }, { status: 400 });
+    const body = await req.json();
+
+    // Update model preference
+    if (body.selectedModel !== undefined) {
+      if (!body.selectedModel || typeof body.selectedModel !== 'string') {
+        return NextResponse.json({ error: 'Invalid model' }, { status: 400 });
+      }
+      await updateUserSettings(supabase, user.id, body.selectedModel);
     }
 
-    await updateUserSettings(supabase, user.id, selectedModel as ModelProvider);
+    // Update API key (null = remove key)
+    if ('openrouterApiKey' in body) {
+      const key = body.openrouterApiKey;
+      if (key !== null && typeof key !== 'string') {
+        return NextResponse.json({ error: 'Invalid API key' }, { status: 400 });
+      }
+      await updateUserApiKey(supabase, user.id, key || null);
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to save settings';

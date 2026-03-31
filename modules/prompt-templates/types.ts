@@ -1,4 +1,4 @@
-export type ModelProvider = 'anthropic' | 'openai';
+export type ModelProvider = string;
 
 export type TemplateSlug = 'lesson' | 'ask' | 'diagram' | 'models';
 
@@ -10,4 +10,11 @@ export interface PromptTemplate {
   user_id: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface ModelOption {
+  id: string;
+  name: string;
+  description: string;
+  color: string;
 }

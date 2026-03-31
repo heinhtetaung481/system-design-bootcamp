@@ -1,5 +1,5 @@
 import { getSupabase } from '@/modules/identity';
-import type { ModelProvider } from '@/modules/prompt-templates/types';
+import type { ModelOption } from '@/modules/prompt-templates/types';
 
 // In-memory cache per slug — avoids DB round-trip per AI call
 const cache = new Map<string, { value: string; expiry: number }>();
@@ -54,21 +54,17 @@ export async function getTemplate(slug: string, userId?: string): Promise<string
 }
 
 /** Get the model catalog from DB, or return the hardcoded default. */
-export async function getModelOptions(userId?: string): Promise<Array<{
-  id: ModelProvider;
-  name: string;
-  model: string;
-  description: string;
-  color: string;
-}>> {
+export async function getModelOptions(userId?: string): Promise<ModelOption[]> {
   const content = await getTemplate('models', userId);
   if (content) {
     try { return JSON.parse(content); } catch { /* fall through */ }
   }
   // Hardcoded fallback
   return [
-    { id: 'anthropic', name: 'Claude Sonnet', model: 'claude-sonnet-4-20250514', description: 'Anthropic — Best for nuanced explanations', color: '#FF8C42' },
-    { id: 'openai', name: 'GPT-4o', model: 'gpt-4o', description: 'OpenAI — Strong technical content', color: '#10A37F' },
+    { id: 'meta-llama/llama-4-scout:free', name: 'Llama 4 Scout', description: "Meta's Llama 4 Scout - free tier", color: '#7C3AED' },
+    { id: 'google/gemini-2.0-flash-exp:free', name: 'Gemini 2.0 Flash', description: "Google's Gemini 2.0 Flash Experimental - free tier", color: '#1A73E8' },
+    { id: 'deepseek/deepseek-r1:free', name: 'DeepSeek R1', description: "DeepSeek R1 reasoning model - free tier", color: '#EF4444' },
+    { id: 'mistralai/mistral-7b-instruct:free', name: 'Mistral 7B', description: 'Mistral 7B Instruct - fast and free', color: '#F59E0B' },
   ];
 }
 

@@ -1,4 +1,4 @@
-import type { ModelProvider } from '@/modules/prompt-templates/types';
+import type { ModelOption } from '@/modules/prompt-templates/types';
 
 export const FALLBACK_LESSON_PROMPT = `You are an expert system design instructor at a FAANG company teaching a senior software engineer who is a visual learner preparing for system design interviews. Write a comprehensive, deeply detailed lesson.
 
@@ -130,13 +130,9 @@ LAYOUT RULES:
 
 OUTPUT: ONLY the JSON object. No markdown. No explanation. No code fences.`;
 
-export const MODEL_OPTIONS: Array<{
-  id: ModelProvider;
-  name: string;
-  model: string;
-  description: string;
-  color: string;
-}> = [
-  { id: 'anthropic', name: 'Claude Sonnet', model: 'claude-sonnet-4-20250514', description: 'Anthropic — Best for nuanced explanations', color: '#FF8C42' },
-  { id: 'openai', name: 'GPT-4o', model: 'gpt-4o', description: 'OpenAI — Strong technical content', color: '#10A37F' },
+export const MODEL_OPTIONS: ModelOption[] = [
+  { id: 'meta-llama/llama-4-scout:free', name: 'Llama 4 Scout', description: "Meta's Llama 4 Scout - free tier", color: '#7C3AED' },
+  { id: 'google/gemini-2.0-flash-exp:free', name: 'Gemini 2.0 Flash', description: "Google's Gemini 2.0 Flash Experimental - free tier", color: '#1A73E8' },
+  { id: 'deepseek/deepseek-r1:free', name: 'DeepSeek R1', description: "DeepSeek R1 reasoning model - free tier", color: '#EF4444' },
+  { id: 'mistralai/mistral-7b-instruct:free', name: 'Mistral 7B', description: 'Mistral 7B Instruct - fast and free', color: '#F59E0B' },
 ];

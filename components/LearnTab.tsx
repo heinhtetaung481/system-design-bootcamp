@@ -2,18 +2,17 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import type { Topic } from '@/modules/curriculum/types';
-import type { ModelProvider } from '@/modules/prompt-templates/types';
 import { DIAGRAMS } from '@/modules/curriculum/lib/diagrams';
 
 interface LearnTabProps {
   topic: Topic;
-  provider: ModelProvider;
+  modelId: string;
   completed: boolean;
   onComplete: () => void;
   isMobile: boolean;
 }
 
-export default function LearnTab({ topic, provider, completed, onComplete, isMobile }: LearnTabProps) {
+export default function LearnTab({ topic, modelId, completed, onComplete, isMobile }: LearnTabProps) {
   const [lessonContent, setLessonContent] = useState('');
   const [loading,       setLoading]       = useState(false);
   const [isCached,      setIsCached]      = useState(false);
@@ -29,7 +28,7 @@ export default function LearnTab({ topic, provider, completed, onComplete, isMob
       const res  = await fetch('/api/generate-lesson', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topicId: topic.id, topicTitle: topic.title, keyPoints: topic.keyPoints, provider, forceRegenerate }),
+        body: JSON.stringify({ topicId: topic.id, topicTitle: topic.title, keyPoints: topic.keyPoints, modelId, forceRegenerate }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -39,7 +38,7 @@ export default function LearnTab({ topic, provider, completed, onComplete, isMob
       setError(e instanceof Error ? e.message : 'Failed to load lesson');
     }
     setLoading(false);
-  }, [topic.id, topic.title, topic.keyPoints, provider]);
+  }, [topic.id, topic.title, topic.keyPoints, modelId]);
 
   useEffect(() => { fetchLesson(); }, [fetchLesson]);
 

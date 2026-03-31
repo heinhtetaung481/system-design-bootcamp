@@ -1,4 +1,3 @@
-import type { ModelProvider } from '@/modules/prompt-templates/types';
 import { getTemplate } from '@/modules/prompt-templates';
 import { getProvider } from './providers/factory';
 import { FALLBACK_LESSON_PROMPT, FALLBACK_ASK_TEMPLATE, FALLBACK_DIAGRAM_PROMPT } from './fallback-prompts';
@@ -21,32 +20,35 @@ async function getDiagramPrompt(): Promise<string> {
 // ── Public generation functions ───────────────────────────────────────────────
 
 export async function generateLesson(
-  providerKey: ModelProvider,
+  modelId: string,
+  apiKey: string,
   topicTitle: string,
   keyPoints: string[]
 ): Promise<string> {
   const systemPrompt = await getLessonPrompt();
   const userMessage = `Teach me about: ${topicTitle}\n\nContext from curriculum:\n${keyPoints.map(k => `- ${k}`).join('\n')}\n\nWrite a complete, comprehensive lesson covering all sections. Do not cut off or summarize — write everything in full.`;
-  const provider = getProvider(providerKey);
+  const provider = getProvider(modelId, apiKey);
   return provider.generateLesson(systemPrompt, userMessage);
 }
 
 export async function generateAskResponse(
-  providerKey: ModelProvider,
+  modelId: string,
+  apiKey: string,
   topicTitle: string,
   question: string
 ): Promise<string> {
   const systemPrompt = await getAskPrompt(topicTitle);
-  const provider = getProvider(providerKey);
+  const provider = getProvider(modelId, apiKey);
   return provider.generateAskResponse(systemPrompt, question);
 }
 
 export async function generateDiagram(
-  providerKey: ModelProvider,
+  modelId: string,
+  apiKey: string,
   prompt: string
 ): Promise<string> {
   const systemPrompt = await getDiagramPrompt();
   const userMessage = `Generate an architecture diagram for: ${prompt}`;
-  const provider = getProvider(providerKey);
+  const provider = getProvider(modelId, apiKey);
   return provider.generateDiagram(systemPrompt, userMessage);
 }

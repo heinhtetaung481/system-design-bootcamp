@@ -2,9 +2,7 @@
 
 import { useState } from 'react';
 import type { Topic } from '@/modules/curriculum/types';
-import type { ModelProvider } from '@/modules/prompt-templates/types';
-
-export default function AskTab({ topic, provider }: { topic: Topic; provider: ModelProvider }) {
+export default function AskTab({ topic, modelId }: { topic: Topic; modelId: string }) {
   const [question, setQuestion] = useState('');
   const [answer,   setAnswer]   = useState('');
   const [loading,  setLoading]  = useState(false);
@@ -24,7 +22,7 @@ export default function AskTab({ topic, provider }: { topic: Topic; provider: Mo
       const res  = await fetch('/api/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topicId: topic.id, topicTitle: topic.title, question, provider }),
+        body: JSON.stringify({ topicId: topic.id, topicTitle: topic.title, question, modelId }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);

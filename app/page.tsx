@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import type { ModelProvider } from '@/modules/prompt-templates/types';
 import type { Phase, Topic } from '@/modules/curriculum/types';
 import { createClient } from '@/modules/identity/lib/supabase-browser';
 import Sidebar from '@/components/Sidebar';
@@ -10,6 +9,7 @@ import LearnTab from '@/components/LearnTab';
 import DiagramTab from '@/components/DiagramTab';
 import PracticeTab from '@/components/PracticeTab';
 import AskTab from '@/components/AskTab';
+import ModelSelector from '@/components/ModelSelector';
 
 type Tab = 'learn' | 'diagram' | 'practice' | 'ask';
 
@@ -27,7 +27,9 @@ export default function Home() {
   const [currentId,   setCurrentId]   = useState('networking');
   const [activeTab,   setActiveTab]   = useState<Tab>('learn');
   const [completed,   setCompleted]   = useState<Set<string>>(new Set());
-  const [provider,    setProvider]    = useState<ModelProvider>('anthropic');
+  const [modelId,     setModelId]     = useState<string>('meta-llama/llama-4-scout:free');
+  const [modelOptions, setModelOptions] = useState<import('@/modules/prompt-templates/types').ModelOption[]>([]);
+  const [hasOwnKey,   setHasOwnKey]   = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isMobile,    setIsMobile]    = useState(false);
   const [userAvatar,  setUserAvatar]  = useState<string | null>(null);
@@ -66,8 +68,9 @@ export default function Home() {
       .then(async res => {
         if (!res.ok) { setSettingsLoading(false); return; }
         const data = await res.json();
+        if (data.hasOwnKey) setHasOwnKey(data.hasOwnKey);
         if (data.selectedModel) {
-          setProvider(data.selectedModel as ModelProvider);
+          setModelId(data.selectedModel);
           setSettingsLoading(false);
         } else {
           setSettingsLoading(false);
@@ -76,6 +79,15 @@ export default function Home() {
       })
       .catch(() => { setSettingsLoading(false); });
   }, [router]);
+
+  useEffect(() => {
+    fetch('/api/models')
+      .then(res => res.json())
+      .then(data => {
+        if (data.options?.length) setModelOptions(data.options);
+      })
+      .catch(() => { /* use fallback from ModelSelector */ });
+  }, []);
 
   useEffect(() => {
     const check = () => {
@@ -242,6 +254,16 @@ export default function Home() {
             )}
 
             <div style={{ flex: 1 }} />
+
+            {/* Model selector */}
+            {!isMobile && (
+              <ModelSelector
+                modelId={modelId}
+                onChange={setModelId}
+                options={modelOptions}
+                hasOwnKey={hasOwnKey}
+              />
+            )}
 
             {/* Right controls */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
@@ -461,10 +483,10 @@ export default function Home() {
               className="animate-fadeUp"
               style={{ maxWidth: 740, margin: '0 auto', padding: isMobile ? '24px 16px 100px' : '32px 24px 48px' }}
             >
-              {activeTab === 'learn'    && <LearnTab    topic={topic} provider={provider} completed={isComplete} onComplete={markComplete} isMobile={isMobile} />}
-              {activeTab === 'diagram'  && <DiagramTab  topic={topic} provider={provider} />}
+              {activeTab === 'learn'    && <LearnTab    topic={topic} modelId={modelId} completed={isComplete} onComplete={markComplete} isMobile={isMobile} />}
+              {activeTab === 'diagram'  && <DiagramTab  topic={topic} modelId={modelId} />}
               {activeTab === 'practice' && <PracticeTab topic={topic} />}
-              {activeTab === 'ask'      && <AskTab      topic={topic} provider={provider} />}
+              {activeTab === 'ask'      && <AskTab      topic={topic} modelId={modelId} />}
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'rgba(237,237,245,0.25)', fontSize: 14 }}>

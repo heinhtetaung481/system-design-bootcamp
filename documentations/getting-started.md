@@ -5,7 +5,7 @@ This guide will help you set up the System Design Bootcamp project locally.
 ## Prerequisites
 - Node.js 20+
 - A [Supabase](https://supabase.com/) account
-- API keys for [Anthropic](https://console.anthropic.com) and/or [OpenAI](https://platform.openai.com)
+- An [OpenRouter](https://openrouter.ai) API key (used as the admin/fallback key)
 - GitHub account (for OAuth configuration in Supabase)
 
 ## Environment Setup
@@ -17,16 +17,19 @@ This guide will help you set up the System Design Bootcamp project locally.
 
 3. Populate the variables in `.env.local`:
    ```env
-   # Supabase
-   # Get these from: https://supabase.com/dashboard → Project Settings → API
    NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
    SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
-   # AI Providers
-   ANTHROPIC_API_KEY=sk-ant-...
-   OPENAI_API_KEY=sk-...
+   # OpenRouter API key — get one at https://openrouter.ai
+   # This is used as the admin/fallback key when users haven't set their own key.
+   OPENROUTER_API_KEY=sk-or-v1-...
+
+   # App URL (used in OpenRouter HTTP-Referer header)
+   NEXT_PUBLIC_APP_URL=http://localhost:3000
    ```
+
+> **BYOK (Bring Your Own Key):** Users can add their own OpenRouter API key in the **Settings** page. When set, their key is used for all AI requests instead of the admin key, enabling access to premium models.
 
 ## Installation
 Install the project dependencies using `npm`:

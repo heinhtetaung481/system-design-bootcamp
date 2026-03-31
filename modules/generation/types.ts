@@ -1,13 +1,5 @@
 // Re-export ModelProvider from its canonical home (prompt-templates is lower in hierarchy)
-export type { ModelProvider } from '@/modules/prompt-templates/types';
-
-export interface ModelOption {
-  id: import('@/modules/prompt-templates/types').ModelProvider;
-  name: string;
-  model: string;
-  description: string;
-  color: string;
-}
+export type { ModelProvider, ModelOption } from '@/modules/prompt-templates/types';
 
 export interface Lesson {
   id: string;
