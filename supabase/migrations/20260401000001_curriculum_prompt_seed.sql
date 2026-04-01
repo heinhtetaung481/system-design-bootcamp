@@ -167,7 +167,7 @@ true, 3)
 
   INSERT INTO prompt_templates (slug, title, content, migrated_from_code, original_order)
   VALUES ('models', 'AI Model Options Configuration',
-'[{"id":"meta-llama/llama-4-scout:free","name":"Llama 4 Scout","description":"Meta'\''s Llama 4 Scout - free tier","color":"#7C3AED"},{"id":"google/gemini-2.0-flash-exp:free","name":"Gemini 2.0 Flash","description":"Google'\''s Gemini 2.0 Flash - free tier","color":"#1A73E8"},{"id":"deepseek/deepseek-r1:free","name":"DeepSeek R1","description":"DeepSeek R1 reasoning model - free tier","color":"#EF4444"},{"id":"mistralai/mistral-7b-instruct:free","name":"Mistral 7B","description":"Mistral 7B Instruct - fast and free","color":"#F59E0B"}]',
+'[{"id":"meta-llama/llama-4-scout:free","name":"Llama 4 Scout","description":"Meta''s Llama 4 Scout - free tier","color":"#7C3AED"},{"id":"google/gemini-2.0-flash-exp:free","name":"Gemini 2.0 Flash","description":"Google''s Gemini 2.0 Flash - free tier","color":"#1A73E8"},{"id":"deepseek/deepseek-r1:free","name":"DeepSeek R1","description":"DeepSeek R1 reasoning model - free tier","color":"#EF4444"},{"id":"mistralai/mistral-7b-instruct:free","name":"Mistral 7B","description":"Mistral 7B Instruct - fast and free","color":"#F59E0B"}]',
 true, 4)
   ON CONFLICT (slug, user_id) DO UPDATE SET content = EXCLUDED.content, updated_at = now();
 
