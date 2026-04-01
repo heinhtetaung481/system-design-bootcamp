@@ -50,7 +50,7 @@ $$;
 -- ═══════════════════════════════════════════════════════════════════════════════
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_curriculum_single_active
-  ON curriculum_versions (1) WHERE is_active = true;
+  ON curriculum_versions ((true)) WHERE is_active = true;
 
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- ADD TRIGGER FOR SYSTEM DEFAULT ENFORCEMENT
