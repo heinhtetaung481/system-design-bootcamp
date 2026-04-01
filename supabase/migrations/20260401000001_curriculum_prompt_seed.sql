@@ -52,31 +52,15 @@ $$;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_curriculum_single_active
   ON curriculum_versions ((true)) WHERE is_active = true;
 
--- ═══════════════════════════════════════════════════════════════════════════════
--- ADD TRIGGER FOR SYSTEM DEFAULT ENFORCEMENT
--- ═══════════════════════════════════════════════════════════════════════════════
+CREATE UNIQUE INDEX IF NOT EXISTS idx_prompt_templates_system_default
+  ON prompt_templates (slug) WHERE user_id IS NULL;
 
-CREATE OR REPLACE FUNCTION ensure_system_default_template()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF NEW.user_id IS NULL THEN
-    IF EXISTS (
-      SELECT 1 FROM prompt_templates 
-      WHERE slug = NEW.slug 
-        AND user_id IS NULL 
-        AND id != COALESCE(NEW.id, '00000000-0000-0000-0000-000000000000'::uuid)
-    ) THEN
-      RAISE EXCEPTION 'Only one system default template allowed per slug';
-    END IF;
-  END IF;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CLEANUP OLD TRIGGER
+-- ═══════════════════════════════════════════════════════════════════════════════
 
 DROP TRIGGER IF EXISTS trigger_ensure_system_default ON prompt_templates;
-CREATE TRIGGER trigger_ensure_system_default
-  BEFORE INSERT OR UPDATE ON prompt_templates
-  FOR EACH ROW EXECUTE FUNCTION ensure_system_default_template();
+DROP FUNCTION IF EXISTS ensure_system_default_template();
 
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- SEED DATA - CURRICULUM
@@ -113,8 +97,35 @@ $$;
 
 DO $$
 BEGIN
-  INSERT INTO prompt_templates (slug, title, content, migrated_from_code, original_order)
-  VALUES ('lesson', 'Lesson Generation Prompt', 
+  -- lesson
+  IF EXISTS (SELECT 1 FROM prompt_templates WHERE slug = 'lesson' AND user_id IS NULL) THEN
+    UPDATE prompt_templates 
+    SET title = 'Lesson Generation Prompt', 
+        content = 'You are an expert system design instructor at a FAANG company teaching a senior software engineer who is a visual learner preparing for system design interviews. Write a comprehensive, deeply detailed lesson.
+
+CRITICAL RULES:
+- Write COMPLETE content — do NOT truncate.
+- Use rich visual HTML structure.
+- Use callout boxes: <div class="callout callout-blue"><div class="callout-title">💡 KEY INSIGHT</div><p>text</p></div>
+- Use stat cards: <div class="stat-grid"><div class="stat-card"><span class="stat-val">99ms</span><span class="stat-label">Redis p99</span></div></div>
+- Use theory boxes: <div class="theory-box"><div class="theory-title">🔬 HOW IT WORKS</div></div>
+
+FORMAT STRUCTURE:
+<h2>🎯 What Is It & Why It Matters</h2>
+<h2>🧠 Theory Deep Dive</h2>
+<h2>📊 Scale & Numbers to Know</h2>
+<h2>🏭 How Top Companies Actually Use This</h2>
+<h2>⚖️ Tradeoffs — When To Use What</h2>
+<h2>🔴 Common Failure Modes</h2>
+<h2>🎤 Interview Playbook</h2>
+
+Write with the depth of a senior staff engineer. Use real product names, real numbers, real failure stories.',
+        migrated_from_code = true,
+        updated_at = now()
+    WHERE slug = 'lesson' AND user_id IS NULL;
+  ELSE
+    INSERT INTO prompt_templates (slug, title, content, migrated_from_code, original_order)
+    VALUES ('lesson', 'Lesson Generation Prompt', 
 'You are an expert system design instructor at a FAANG company teaching a senior software engineer who is a visual learner preparing for system design interviews. Write a comprehensive, deeply detailed lesson.
 
 CRITICAL RULES:
@@ -134,17 +145,51 @@ FORMAT STRUCTURE:
 <h2>🎤 Interview Playbook</h2>
 
 Write with the depth of a senior staff engineer. Use real product names, real numbers, real failure stories.',
-true, 1)
-  ON CONFLICT (slug, user_id) DO UPDATE SET content = EXCLUDED.content, updated_at = now();
+true, 1);
+  END IF;
 
-  INSERT INTO prompt_templates (slug, title, content, migrated_from_code, original_order)
-  VALUES ('ask', 'Ask Question Response Prompt',
+  -- ask
+  IF EXISTS (SELECT 1 FROM prompt_templates WHERE slug = 'ask' AND user_id IS NULL) THEN
+    UPDATE prompt_templates 
+    SET title = 'Ask Question Response Prompt',
+        content = 'You are an expert system design instructor. The student is a senior software engineer studying "{{topicTitle}}". Answer their question clearly and practically. Use concrete examples, real numbers, and reference actual systems. Format with HTML: <p>, <strong>, <ul><li> as needed. Be direct — no padding. Always write complete answers.',
+        migrated_from_code = true,
+        updated_at = now()
+    WHERE slug = 'ask' AND user_id IS NULL;
+  ELSE
+    INSERT INTO prompt_templates (slug, title, content, migrated_from_code, original_order)
+    VALUES ('ask', 'Ask Question Response Prompt',
 'You are an expert system design instructor. The student is a senior software engineer studying "{{topicTitle}}". Answer their question clearly and practically. Use concrete examples, real numbers, and reference actual systems. Format with HTML: <p>, <strong>, <ul><li> as needed. Be direct — no padding. Always write complete answers.',
-true, 2)
-  ON CONFLICT (slug, user_id) DO UPDATE SET content = EXCLUDED.content, updated_at = now();
+true, 2);
+  END IF;
 
-  INSERT INTO prompt_templates (slug, title, content, migrated_from_code, original_order)
-  VALUES ('diagram', 'Diagram Generation Prompt',
+  -- diagram
+  IF EXISTS (SELECT 1 FROM prompt_templates WHERE slug = 'diagram' AND user_id IS NULL) THEN
+    UPDATE prompt_templates 
+    SET title = 'Diagram Generation Prompt',
+        content = 'You are an expert system design architect. Generate a visual architecture diagram as JSON.
+
+{
+  "title": "Descriptive diagram title",
+  "nodes": [
+    {"id": "unique_id", "label": "Label", "shape": "rect", "color": "#4F9DFF", "x": 100, "y": 100, "width": 140, "height": 50}
+  ],
+  "edges": [
+    {"from": "source_id", "to": "target_id", "label": "optional label", "dashed": false}
+  ]
+}
+
+SHAPES: rect (services), cylinder (databases), diamond (load balancers), circle (users)
+COLORS: #4F9DFF (blue), #00D68F (green), #FF8C42 (orange), #9B7FFF (purple), #00D4FF (cyan), #FF5470 (red)
+LAYOUT: x: 50–850, y: 50–550. Max 12 nodes.
+
+OUTPUT: ONLY the JSON object. No markdown. No explanation. No code fences.',
+        migrated_from_code = true,
+        updated_at = now()
+    WHERE slug = 'diagram' AND user_id IS NULL;
+  ELSE
+    INSERT INTO prompt_templates (slug, title, content, migrated_from_code, original_order)
+    VALUES ('diagram', 'Diagram Generation Prompt',
 'You are an expert system design architect. Generate a visual architecture diagram as JSON.
 
 {
@@ -162,14 +207,23 @@ COLORS: #4F9DFF (blue), #00D68F (green), #FF8C42 (orange), #9B7FFF (purple), #00
 LAYOUT: x: 50–850, y: 50–550. Max 12 nodes.
 
 OUTPUT: ONLY the JSON object. No markdown. No explanation. No code fences.',
-true, 3)
-  ON CONFLICT (slug, user_id) DO UPDATE SET content = EXCLUDED.content, updated_at = now();
+true, 3);
+  END IF;
 
-  INSERT INTO prompt_templates (slug, title, content, migrated_from_code, original_order)
-  VALUES ('models', 'AI Model Options Configuration',
+  -- models
+  IF EXISTS (SELECT 1 FROM prompt_templates WHERE slug = 'models' AND user_id IS NULL) THEN
+    UPDATE prompt_templates 
+    SET title = 'AI Model Options Configuration',
+        content = '[{"id":"meta-llama/llama-4-scout:free","name":"Llama 4 Scout","description":"Meta''s Llama 4 Scout - free tier","color":"#7C3AED"},{"id":"google/gemini-2.0-flash-exp:free","name":"Gemini 2.0 Flash","description":"Google''s Gemini 2.0 Flash - free tier","color":"#1A73E8"},{"id":"deepseek/deepseek-r1:free","name":"DeepSeek R1","description":"DeepSeek R1 reasoning model - free tier","color":"#EF4444"},{"id":"mistralai/mistral-7b-instruct:free","name":"Mistral 7B","description":"Mistral 7B Instruct - fast and free","color":"#F59E0B"}]',
+        migrated_from_code = true,
+        updated_at = now()
+    WHERE slug = 'models' AND user_id IS NULL;
+  ELSE
+    INSERT INTO prompt_templates (slug, title, content, migrated_from_code, original_order)
+    VALUES ('models', 'AI Model Options Configuration',
 '[{"id":"meta-llama/llama-4-scout:free","name":"Llama 4 Scout","description":"Meta''s Llama 4 Scout - free tier","color":"#7C3AED"},{"id":"google/gemini-2.0-flash-exp:free","name":"Gemini 2.0 Flash","description":"Google''s Gemini 2.0 Flash - free tier","color":"#1A73E8"},{"id":"deepseek/deepseek-r1:free","name":"DeepSeek R1","description":"DeepSeek R1 reasoning model - free tier","color":"#EF4444"},{"id":"mistralai/mistral-7b-instruct:free","name":"Mistral 7B","description":"Mistral 7B Instruct - fast and free","color":"#F59E0B"}]',
-true, 4)
-  ON CONFLICT (slug, user_id) DO UPDATE SET content = EXCLUDED.content, updated_at = now();
+true, 4);
+  END IF;
 
   RAISE NOTICE 'Prompt templates seeded successfully';
 END;
