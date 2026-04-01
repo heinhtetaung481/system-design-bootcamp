@@ -6,8 +6,12 @@ import { createClient } from '@/modules/identity/lib/supabase-browser';
 export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
-  const handleLogin = async () => {
+  const handleGithubLogin = async () => {
     setError('');
     setLoading(true);
     try {
@@ -22,6 +26,56 @@ export default function LoginPage() {
       if (data?.url) window.location.href = data.url;
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Login failed');
+      setLoading(false);
+    }
+  };
+
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccessMessage('');
+    setLoading(true);
+
+    try {
+      const supabase = createClient();
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (authError) { setError(authError.message); setLoading(false); return; }
+
+      // Redirect to home page on success
+      window.location.href = '/';
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Login failed');
+      setLoading(false);
+    }
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccessMessage('');
+    setLoading(true);
+
+    try {
+      const supabase = createClient();
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+      const { error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${siteUrl}/auth/callback`,
+        },
+      });
+
+      if (authError) { setError(authError.message); setLoading(false); return; }
+
+      setSuccessMessage('Check your email for a confirmation link to complete your registration.');
+      setLoading(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Sign up failed');
       setLoading(false);
     }
   };
@@ -116,7 +170,7 @@ export default function LoginPage() {
 
         {/* GitHub Login Button */}
         <button
-          onClick={handleLogin}
+          onClick={handleGithubLogin}
           disabled={loading}
           style={{
             display: 'flex',
@@ -155,6 +209,127 @@ export default function LoginPage() {
           {loading ? 'Signing in…' : 'Continue with GitHub'}
         </button>
 
+        {/* Divider */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          width: '100%',
+          gap: 12,
+        }}>
+          <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.10)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(237,237,245,0.35)', fontWeight: 500 }}>or</span>
+          <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.10)' }} />
+        </div>
+
+        {/* Email/Password Form */}
+        <form onSubmit={isSignUp ? handleSignUp : handleEmailLogin} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <input
+            type="email"
+            placeholder="Email address"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            required
+            style={{
+              width: '100%',
+              padding: '12px 16px',
+              borderRadius: 10,
+              border: '1px solid rgba(255,255,255,0.14)',
+              background: 'rgba(255,255,255,0.06)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              color: '#ededf5',
+              fontSize: 14,
+              outline: 'none',
+              transition: 'border-color 0.2s',
+              boxSizing: 'border-box',
+            }}
+            onFocus={e => e.target.style.borderColor = 'rgba(99,102,241,0.5)'}
+            onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.14)'}
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            required
+            minLength={6}
+            style={{
+              width: '100%',
+              padding: '12px 16px',
+              borderRadius: 10,
+              border: '1px solid rgba(255,255,255,0.14)',
+              background: 'rgba(255,255,255,0.06)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              color: '#ededf5',
+              fontSize: 14,
+              outline: 'none',
+              transition: 'border-color 0.2s',
+              boxSizing: 'border-box',
+            }}
+            onFocus={e => e.target.style.borderColor = 'rgba(99,102,241,0.5)'}
+            onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.14)'}
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10,
+              width: '100%',
+              padding: '13px 20px',
+              borderRadius: 12,
+              border: '1px solid rgba(99,102,241,0.3)',
+              background: loading ? 'rgba(99,102,241,0.1)' : 'rgba(99,102,241,0.15)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              color: '#ededf5',
+              fontSize: 15,
+              fontWeight: 500,
+              cursor: loading ? 'wait' : 'pointer',
+              opacity: loading ? 0.6 : 1,
+              transition: 'all 0.2s',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
+            }}
+            onMouseEnter={e => {
+              if (!loading) {
+                e.currentTarget.style.background = 'rgba(99,102,241,0.25)';
+                e.currentTarget.style.borderColor = 'rgba(99,102,241,0.5)';
+              }
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'rgba(99,102,241,0.15)';
+              e.currentTarget.style.borderColor = 'rgba(99,102,241,0.3)';
+            }}
+          >
+            {loading ? (isSignUp ? 'Creating account…' : 'Signing in…') : (isSignUp ? 'Create account' : 'Sign in with email')}
+          </button>
+        </form>
+
+        {/* Toggle Sign in / Sign up */}
+        <button
+          onClick={() => {
+            setIsSignUp(!isSignUp);
+            setError('');
+            setSuccessMessage('');
+          }}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'rgba(99,102,241,0.8)',
+            fontSize: 13,
+            cursor: 'pointer',
+            padding: '4px 0',
+            transition: 'color 0.2s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.color = 'rgba(99,102,241,1)'}
+          onMouseLeave={e => e.currentTarget.style.color = 'rgba(99,102,241,0.8)'}
+        >
+          {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+        </button>
+
         {displayError && (
           <p style={{
             fontSize: 13,
@@ -171,6 +346,25 @@ export default function LoginPage() {
             WebkitBackdropFilter: 'blur(8px)',
           }}>
             {displayError}
+          </p>
+        )}
+
+        {successMessage && (
+          <p style={{
+            fontSize: 13,
+            color: '#4ade80',
+            textAlign: 'center',
+            lineHeight: 1.5,
+            padding: '10px 16px',
+            borderRadius: 10,
+            background: 'rgba(74,222,128,0.08)',
+            border: '1px solid rgba(74,222,128,0.20)',
+            width: '100%',
+            margin: 0,
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+          }}>
+            {successMessage}
           </p>
         )}
 
