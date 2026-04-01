@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/modules/identity/lib/supabase-browser';
-import { MODEL_OPTIONS } from '@/modules/generation';
+import type { ModelOption } from '@/modules/prompt-templates/types';
 
 function SettingsContent() {
   const router = useRouter();
@@ -16,6 +16,7 @@ function SettingsContent() {
   const [error, setError] = useState('');
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
+  const [modelOptions, setModelOptions] = useState<ModelOption[]>([]);
 
   const [apiKey, setApiKey] = useState('');
   const [apiKeyMasked, setApiKeyMasked] = useState<string | null>(null);
@@ -43,6 +44,12 @@ function SettingsContent() {
             setHasOwnKey(true);
             setApiKeyMasked(data.openrouterApiKey);
           }
+        }
+
+        const modelsRes = await fetch('/api/models');
+        if (modelsRes.ok) {
+          const modelsData = await modelsRes.json();
+          if (modelsData.models) setModelOptions(modelsData.models);
         }
       } catch {
         // Fetch failed — loading clears below; user can still select a model
@@ -293,7 +300,7 @@ function SettingsContent() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {MODEL_OPTIONS.map(opt => {
+                {modelOptions.map((opt: ModelOption) => {
                   const active = selected === opt.id;
                   return (
                     <button

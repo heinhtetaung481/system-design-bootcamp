@@ -1,3 +1,10 @@
+/**
+ * @deprecated These fallbacks are no longer used.
+ * All templates are now stored in the database.
+ * This file is kept for reference during migration.
+ * Will be removed in a future version.
+ */
+
 import type { ModelOption } from '@/modules/prompt-templates/types';
 
 export const FALLBACK_LESSON_PROMPT = `You are an expert system design instructor at a FAANG company teaching a senior software engineer who is a visual learner preparing for system design interviews. Write a comprehensive, deeply detailed lesson.

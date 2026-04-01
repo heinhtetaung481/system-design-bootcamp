@@ -1,23 +1,18 @@
 import { getTemplate } from '@/modules/prompt-templates';
 import { getProvider } from './providers/factory';
-import { FALLBACK_LESSON_PROMPT, FALLBACK_ASK_TEMPLATE, FALLBACK_DIAGRAM_PROMPT } from './fallback-prompts';
-
-// ── Template loaders (DB with hardcoded fallback) ─────────────────────────────
 
 async function getLessonPrompt(): Promise<string> {
-  return (await getTemplate('lesson')) ?? FALLBACK_LESSON_PROMPT;
+  return getTemplate('lesson');
 }
 
 async function getAskPrompt(topicTitle: string): Promise<string> {
-  const template = (await getTemplate('ask')) ?? FALLBACK_ASK_TEMPLATE;
+  const template = await getTemplate('ask');
   return template.replace('{{topicTitle}}', topicTitle);
 }
 
 async function getDiagramPrompt(): Promise<string> {
-  return (await getTemplate('diagram')) ?? FALLBACK_DIAGRAM_PROMPT;
+  return getTemplate('diagram');
 }
-
-// ── Public generation functions ───────────────────────────────────────────────
 
 export async function generateLesson(
   modelId: string,
